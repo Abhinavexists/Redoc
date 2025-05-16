@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import upload
+from app.api import upload, documents, query
 
 app = FastAPI(title="Theme Identification Chatbot")
 
@@ -13,8 +13,9 @@ app.add_middleware(
 )
 
 app.include_router(upload.router, prefix="/api")
+app.include_router(documents.router, prefix="/api")
+app.include_router(query.router, prefix="/api")
 
 @app.get("/")
 def root():
     return {"message": "API is running"}
-
