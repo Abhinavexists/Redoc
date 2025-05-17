@@ -2,7 +2,11 @@ from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
 from app.services.ocr import extract_text_from_pdf, extract_text_from_image, save_text_to_file
 from app.config import SessionLocal
 from app.models.document import Document
+from app.services.vectorstore.document_indexing import build_vector_store
 from sqlalchemy.orm import Session
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -41,6 +45,17 @@ async def upload_document(file: UploadFile = File(...), db: Session = Depends(ge
     db.add(document)
     db.commit()
     db.refresh(document)
+    
+    # Rebuild vector store after adding new document
+    try:
+        logger.info("Rebuilding vector store after document upload")
+        vectordb = build_vector_store()
+        if vectordb:
+            logger.info("Vector store rebuilt successfully")
+        else:
+            logger.warning("Failed to rebuild vector store")
+    except Exception as e:
+        logger.error(f"Error rebuilding vector store: {str(e)}")
 
     return {
         "message": "File uploaded, Text extracted and saved successfully",
