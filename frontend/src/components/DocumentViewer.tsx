@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, FileText, ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from './ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs.js';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import api from '../services/api';
 
 interface DocumentViewerProps {
   documentId: number;
@@ -40,50 +41,24 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
   const CHUNK_SIZE = 5000; // characters per chunk for efficient loading
 
   useEffect(() => {
-    const fetchDocument = async () => {
-      setLoading(true);
-      try {
-        // In a real implementation, this would be an actual API call
-        // For demonstration, we'll simulate the response
-        setTimeout(async () => {
-          try {
-            // In a production environment, replace this with:
-            // const response = await api.getDocument(documentId);
-            // const documentData = response.data;
-            
-            const documentData = {
-              id: documentId,
-              filename: `Document_${documentId}.pdf`,
-              filetype: 'application/pdf',
-              uploaded_at: new Date().toISOString(),
-              content: `This is the content of document ${documentId}. It contains multiple paragraphs of text that can be analyzed by the AI.\n\nParagraph 2 contains additional information about the topic. The text continues with relevant details that might be used for theme identification.\n\nParagraph 3 discusses some important points related to the document's main subject. This helps establish connections between different documents.\n\nParagraph 4 provides a conclusion or summary of the main points covered in this document.`,
-              metadata: {
-                author: 'Jane Doe',
-                created: '2023-10-15',
-                modified: '2023-11-02',
-                type: 'application/pdf',
-                size: '1.2 MB',
-                pages: 5
-              }
-            };
-            
-            setDocument(documentData);
-            initializeChunks(documentData);
-          } catch (err) {
-            console.error('Error fetching document:', err);
-            setError('Failed to load document details');
-          } finally {
-            setLoading(false);
-          }
-        }, 800); // Simulating network delay
-      } catch (err) {
-        setError('Failed to load document details');
-        setLoading(false);
-      }
-    };
-    
     fetchDocument();
   }, [documentId]);
+
+  const fetchDocument = async () => {
+    setLoading(true);
+    try {
+      const response = await api.getDocument(documentId);
+      const documentData = response.data;
+      
+      setDocument(documentData);
+      initializeChunks(documentData);
+    } catch (err: any) {
+      console.error('Error fetching document:', err);
+      setError(err.message || 'Failed to load document details');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const initializeChunks = useCallback((docData: any) => {
     // Calculate how many chunks we need based on content length
@@ -129,21 +104,15 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
     setChunkLoading(true);
     
     try {
-      // In a real implementation, this would be an API call to get a specific document chunk
-      // For now, we're simulating with the full document content
-      const startPos = chunkIndex * CHUNK_SIZE;
-      const endPos = Math.min(startPos + CHUNK_SIZE, document.content.length);
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const chunkContent = document.content.slice(startPos, endPos);
+      // Get the chunk from the API
+      const response = await api.getDocumentChunk(documentId, chunkIndex, CHUNK_SIZE);
+      const chunkData = response.data;
       
       setDocumentChunks(prevChunks => {
         const newChunks = [...prevChunks];
         newChunks[chunkIndex] = {
           ...newChunks[chunkIndex],
-          content: chunkContent,
+          content: chunkData.content,
           isLoaded: true
         };
         return newChunks;
@@ -152,10 +121,11 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
       setCurrentChunk(chunkIndex);
     } catch (err) {
       console.error('Failed to load document chunk', err);
+      setError('Error loading document chunk');
     } finally {
       setChunkLoading(false);
     }
-  }, [document, documentChunks]);
+  }, [document, documentChunks, documentId]);
 
   const handleNextChunk = () => {
     if (currentChunk < documentChunks.length - 1) {
@@ -167,6 +137,27 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
     if (currentChunk > 0) {
       loadChunk(currentChunk - 1);
     }
+  };
+
+  const handleDownload = () => {
+    if (!document || !document.content) return;
+    
+    // Create a blob with the document content
+    const blob = new Blob([document.content], { type: 'text/plain' });
+    
+    // Create a URL for the blob
+    const url = URL.createObjectURL(blob);
+    
+    // Create a temporary anchor element and trigger the download
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = document.filename || `document_${documentId}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   if (loading) {
@@ -226,7 +217,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
               <Badge variant="outline" className="ml-2">
                 {document.filetype && document.filetype.includes('pdf') ? 'PDF' : 
                  document.filetype && document.filetype.includes('image') ? 'IMAGE' : 
-                 document.filetype || 'PDF'}
+                 document.filetype || 'TXT'}
               </Badge>
             </CardTitle>
             <Button variant="ghost" size="icon" onClick={onClose}>
@@ -241,90 +232,79 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
               <TabsTrigger value="content">Content</TabsTrigger>
               <TabsTrigger value="metadata">Metadata</TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="content" className="pt-6 px-2 pb-2">
+              {chunkLoading && (
+                <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              )}
+              
+              <ScrollArea className="h-[calc(100vh-260px)]">
+                <div className="p-4 text-sm leading-relaxed">
+                  {formatParagraphs(currentContent)}
+                </div>
+              </ScrollArea>
+              
+              {documentChunks.length > 1 && (
+                <div className="flex justify-between items-center mt-4 px-4 py-2 bg-muted/30 rounded-md">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!hasPrevChunk}
+                    onClick={handlePrevChunk}
+                    className="gap-1"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous Section
+                  </Button>
+                  
+                  <div className="text-xs text-muted-foreground">
+                    Section {currentChunk + 1} of {documentChunks.length}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!hasNextChunk}
+                    onClick={handleNextChunk}
+                    className="gap-1"
+                  >
+                    Next Section
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="metadata" className="pt-6 px-2 pb-2">
+              <div className="p-4">
+                <h3 className="text-sm font-medium mb-3">Document Information</h3>
+                <div className="bg-muted/30 rounded-md border p-4">
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <dt className="text-muted-foreground">File Name:</dt>
+                    <dd className="font-medium">{document.filename}</dd>
+                    
+                    <dt className="text-muted-foreground">File Type:</dt>
+                    <dd className="font-medium">{document.filetype || 'Unknown'}</dd>
+                    
+                    <dt className="text-muted-foreground">Size:</dt>
+                    <dd className="font-medium">{document.metadata?.size ? `${Math.round(document.metadata.size / 1024)} KB` : 'Unknown'}</dd>
+                    
+                    <dt className="text-muted-foreground">Last Modified:</dt>
+                    <dd className="font-medium">{document.metadata?.last_modified ? new Date(document.metadata.last_modified * 1000).toLocaleString() : 'Unknown'}</dd>
+                    
+                    <dt className="text-muted-foreground">Uploaded:</dt>
+                    <dd className="font-medium">{document.uploaded_at ? new Date(document.uploaded_at).toLocaleString() : 'Unknown'}</dd>
+                    
+                    <dt className="text-muted-foreground">Document ID:</dt>
+                    <dd className="font-medium">{document.id}</dd>
+                  </dl>
+                </div>
+              </div>
+            </TabsContent>
           </Tabs>
         </div>
-        
-        <CardContent className="flex-1 overflow-hidden">
-          <TabsContent value="content" className="h-full">
-            {chunkLoading && (
-              <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            )}
-            
-            <ScrollArea className="h-[calc(100vh-260px)]">
-              <div className="p-4 text-sm leading-relaxed">
-                {formatParagraphs(currentContent)}
-              </div>
-            </ScrollArea>
-            
-            {documentChunks.length > 1 && (
-              <div className="flex justify-between items-center mt-4 px-4 py-2 bg-muted/30 rounded-md">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!hasPrevChunk}
-                  onClick={handlePrevChunk}
-                  className="gap-1"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous Section
-                </Button>
-                
-                <div className="text-xs text-muted-foreground">
-                  Section {currentChunk + 1} of {documentChunks.length}
-                </div>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!hasNextChunk}
-                  onClick={handleNextChunk}
-                  className="gap-1"
-                >
-                  Next Section
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="metadata" className="h-full">
-            <div className="p-4">
-              <h3 className="text-sm font-medium mb-3">Document Information</h3>
-              <div className="bg-muted/30 rounded-md border p-4">
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                  <dt className="text-muted-foreground">File Name:</dt>
-                  <dd className="font-medium">{document.filename}</dd>
-                  
-                  <dt className="text-muted-foreground">File Type:</dt>
-                  <dd className="font-medium">{document.filetype || document.metadata?.type || 'Unknown'}</dd>
-                  
-                  <dt className="text-muted-foreground">Size:</dt>
-                  <dd className="font-medium">{document.metadata?.size || 'Unknown'}</dd>
-                  
-                  <dt className="text-muted-foreground">Author:</dt>
-                  <dd className="font-medium">{document.metadata?.author || 'Unknown'}</dd>
-                  
-                  <dt className="text-muted-foreground">Created:</dt>
-                  <dd className="font-medium">{document.metadata?.created || 'Unknown'}</dd>
-                  
-                  <dt className="text-muted-foreground">Modified:</dt>
-                  <dd className="font-medium">{document.metadata?.modified || 'Unknown'}</dd>
-                  
-                  <dt className="text-muted-foreground">Pages:</dt>
-                  <dd className="font-medium">{document.pages || document.metadata?.pages || 'Unknown'}</dd>
-                  
-                  <dt className="text-muted-foreground">Uploaded:</dt>
-                  <dd className="font-medium">{document.uploaded_at ? new Date(document.uploaded_at).toLocaleString() : 'Unknown'}</dd>
-                  
-                  <dt className="text-muted-foreground">Document ID:</dt>
-                  <dd className="font-medium">{document.id}</dd>
-                </dl>
-              </div>
-            </div>
-          </TabsContent>
-        </CardContent>
         
         <CardFooter className="border-t py-3 flex justify-between">
           <div>
@@ -344,6 +324,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
             variant="outline" 
             size="sm" 
             className="gap-1"
+            onClick={handleDownload}
           >
             <Download className="h-4 w-4" />
             Download

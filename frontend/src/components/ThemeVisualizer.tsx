@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BarChart3, Maximize2, Minimize2, RefreshCw, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Theme, DocumentNode, ThemeNode, CitationLink } from '../types';
+import type {Theme} from '../types';
 import ForceGraph2D from 'react-force-graph-2d';
 
 interface ThemeVisualizerProps {
@@ -32,37 +32,32 @@ const ThemeVisualizer: React.FC<ThemeVisualizerProps> = ({
     const links: any[] = [];
     const documentNodes = new Set<string>();
     
-    // Create theme nodes
-    themes.forEach((theme, index) => {
+    themes.forEach((theme) => {
       nodes.push({
         id: `theme-${theme.id}`,
         name: theme.theme_name,
         type: 'theme',
         relevance: theme.relevance || 0.5,
         group: 1,
-        val: 20, // Size for theme nodes
+        val: 20,
       });
       
-      // Create document nodes and links
       theme.supporting_documents.forEach(docId => {
-        // Extract document ID from the docId string (usually in format 'Document_1.pdf')
         const documentNumber = docId.match(/\d+/)?.[0] || '0';
         const numericId = parseInt(documentNumber, 10);
         const documentNodeId = `doc-${numericId}`;
         
-        // Only add document node if it's not already added
         if (!documentNodes.has(documentNodeId)) {
           nodes.push({
             id: documentNodeId,
             name: docId,
             type: 'document',
             group: 2,
-            val: 10, // Size for document nodes
+            val: 10,
           });
           documentNodes.add(documentNodeId);
         }
         
-        // Add link between theme and document
         links.push({
           source: `theme-${theme.id}`,
           target: documentNodeId,
@@ -113,13 +108,12 @@ const ThemeVisualizer: React.FC<ThemeVisualizerProps> = ({
   
   const nodeColor = (node: any) => {
     if (node.type === 'theme') {
-      // Use a color based on theme relevance
       const relevance = node.relevance || 0.5;
-      if (relevance > 0.8) return '#8b5cf6'; // Purple for high relevance
-      if (relevance > 0.5) return '#a78bfa'; // Lighter purple for medium
-      return '#c4b5fd'; // Lightest purple for low relevance
+      if (relevance > 0.8) return '#8b5cf6';
+      if (relevance > 0.5) return '#a78bfa';
+      return '#c4b5fd';
     }
-    return '#f97316'; // Orange for documents
+    return '#f97316';
   };
   
   return (

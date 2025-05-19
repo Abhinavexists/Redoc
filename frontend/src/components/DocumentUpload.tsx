@@ -25,13 +25,11 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess }) => {
             const selectedFile = event.target.files[0];
             console.log("File selected:", selectedFile.name, "Size:", selectedFile.size, "Type:", selectedFile.type);
             
-            // Validate file size (100MB max)
             if (selectedFile.size > 100 * 1024 * 1024) {
                 setError('File too large. Maximum size is 100MB.');
                 return;
             }
             
-            // Validate file type
             if (!['application/pdf', 'image/jpeg', 'image/png'].includes(selectedFile.type)) {
                 setError('Invalid file type. Only PDF, JPEG, and PNG are supported.');
                 return;
@@ -70,14 +68,11 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess }) => {
             setSuccess(false);
             setUploadProgress(0);
             
-            // Create an axios cancel token source
             const source = axios.CancelToken.source();
             cancelUploadRef.current = () => source.cancel('Upload canceled by user');
             
-            // Setup progress tracking
             const originalPost = axios.post;
             const customPost = async (url: string, data: FormData, config: any) => {
-                // Add progress tracking
                 const progressConfig = {
                     ...config,
                     onUploadProgress: (progressEvent: any) => {
@@ -91,14 +86,12 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess }) => {
                 return originalPost(url, data, progressConfig);
             };
             
-            // Temporarily override axios.post
             // @ts-ignore
             axios.post = customPost;
             
             const response = await api.uploadDocument(file);
             console.log("Upload response:", response);
             
-            // Restore original axios.post
             // @ts-ignore
             axios.post = originalPost;
             
@@ -106,14 +99,12 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess }) => {
             setSuccess(true);
             setFile(null);
             
-            // Reset the file input
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
             
             onUploadSuccess();
             
-            // Reset progress after a delay
             setTimeout(() => {
                 setUploadProgress(0);
                 setUploading(false);

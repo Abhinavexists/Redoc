@@ -67,8 +67,15 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ matches }) => {
                       {match.matched_text}
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {match.citation}
+                  <TableCell className="text-xs">
+                    <div className="italic text-muted-foreground">
+                      {match.citation}
+                    </div>
+                    {match.relevance && (
+                      <div className="mt-1.5 text-[10px] text-muted-foreground">
+                        Relevance: {(match.relevance * 100).toFixed(0)}%
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

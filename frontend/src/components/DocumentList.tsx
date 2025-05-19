@@ -48,7 +48,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMoreDocuments, setHasMoreDocuments] = useState(true);
 
-  // Wrap onSelectionChange callback with useCallback to prevent unnecessary re-renders
+  // prevent unnecessary re-renders
   const notifySelectionChange = useCallback((newSelection: number[]) => {
     if (onSelectionChange) {
       onSelectionChange(newSelection);
@@ -60,10 +60,8 @@ const DocumentList: React.FC<DocumentListProps> = ({
   }, [refreshTrigger]);
 
   useEffect(() => {
-    // Apply filtering when documents or search/filter criteria change
     let filtered = [...documents];
     
-    // Apply search term filtering
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(doc => 
@@ -72,7 +70,6 @@ const DocumentList: React.FC<DocumentListProps> = ({
       );
     }
     
-    // Apply file type filtering
     if (filterType) {
       filtered = filtered.filter(doc => 
         doc.filetype.includes(filterType)
@@ -92,20 +89,15 @@ const DocumentList: React.FC<DocumentListProps> = ({
       }
       setError(null);
       
-      // In a real implementation, this would include pagination params
-      // Check if the API method accepts pagination params, and if not, handle pagination client-side
       const response = await api.getDocuments();
       const responseData = response.data.documents;
       
-      // Perform pagination client-side if the API doesn't support it
       if (reset) {
         setDocuments(responseData);
         setTotalDocuments(responseData.length);
-        // Show the first page of documents
         setFilteredDocuments(responseData.slice(0, pageSize));
         setHasMoreDocuments(responseData.length > pageSize);
       } else {
-        // Append the next page of documents to the filtered list
         const nextPageStart = currentPage * pageSize;
         const nextPageEnd = nextPageStart + pageSize;
         const newDocs = responseData.slice(nextPageStart, nextPageEnd);
@@ -129,7 +121,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
     }
   };
 
-  // Find previous/next document for the document viewer navigation
+  // find previous/next document for the document viewer navigation
   const getDocumentPosition = useMemo(() => {
     if (viewingDocument === null) return { prev: null, next: null };
     

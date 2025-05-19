@@ -36,7 +36,6 @@ const QueryInterface: React.FC<QueryInterfaceProps> = ({
   const [processingProgress, setProcessingProgress] = useState(0);
   const [processingStage, setProcessingStage] = useState('');
 
-  // Determine if we're dealing with a large document set
   const isLargeDocumentSet = selectedDocuments.length > 50;
 
   const handleSearch = async () => {
@@ -51,13 +50,11 @@ const QueryInterface: React.FC<QueryInterfaceProps> = ({
       setLoading(true);
       setError(null);
       
-      // Handle large document sets differently
       if (isLargeDocumentSet) {
         setProcessingLargeDocumentSet(true);
         setProcessingProgress(0);
         setProcessingStage('Processing query');
         
-        // Use the document processor for large document sets
         try {
           const results = await documentProcessor.analyzeQueryAgainstDocuments(
             currentQuery,
@@ -81,7 +78,6 @@ const QueryInterface: React.FC<QueryInterfaceProps> = ({
           setLoading(false);
         }
       } else {
-        // Standard approach for normal-sized document sets
         const response = await api.queryDocuments(
           currentQuery, 
           enableThemes,

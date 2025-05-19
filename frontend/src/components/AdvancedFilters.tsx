@@ -33,7 +33,6 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
   });
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
-  // Update filters when selections change
   useEffect(() => {
     const filters: FilterOptions = {};
     const active: string[] = [];

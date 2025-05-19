@@ -101,4 +101,14 @@ export interface CitationLink {
   target: string;
   relevance: number;
   value: number;
+}
+
+export interface DocumentMatch {
+  id: number;
+  filename: string;
+  matched_text: string;
+  paragraph?: number;
+  page?: number;
+  relevance: number;
+  citation: string;
 } 
