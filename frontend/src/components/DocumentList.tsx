@@ -44,7 +44,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
-  const [totalDocuments, setTotalDocuments] = useState(0);
+  const [_totalDocuments, setTotalDocuments] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMoreDocuments, setHasMoreDocuments] = useState(true);
 

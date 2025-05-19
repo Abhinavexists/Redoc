@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { FilesIcon, AlertTriangleIcon, BarChart3, CheckIcon } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './ui/card';
-import { Button } from './ui/button';
-import { Progress } from './ui/progress';
-import { Alert, AlertDescription } from './ui/alert';
-import { Slider } from './ui/slider';
-import { Label } from './ui/label';
-import { documentProcessor } from '../services/documentProcessor';
-import type { Theme } from '../types';
-import ThemeDisplay from './ThemeDisplay';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Slider } from '@/components/ui/slider';
+import { Label } from '@/components/ui/label';
+import { documentProcessor } from '@/services/documentProcessor';
+import type { Theme } from '@/types';
+import ThemeDisplay from '@/components/ThemeDisplay';
 
 interface LargeDocumentAnalyzerProps {
   documentIds: number[];

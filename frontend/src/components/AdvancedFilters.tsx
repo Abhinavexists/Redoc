@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Filter, X, Calendar, User, FileType, BarChart3, ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from './ui/card';
 import { Button } from './ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Slider } from './ui/slider';
+import { Label } from './ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Checkbox } from './ui/checkbox';
+import { Input } from './ui/input';
+import { Badge } from './ui/badge';
 import type { FilterOptions } from '../types';
 
 interface AdvancedFiltersProps {
