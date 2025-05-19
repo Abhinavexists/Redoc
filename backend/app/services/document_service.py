@@ -8,7 +8,6 @@ class DocumentService:
         self.db = db
 
     def get_documents(self, page: int = 1, page_size: int = 20) -> Dict:
-        """Get paginated documents"""
         offset = (page - 1) * page_size
         documents = self.db.query(Document).offset(offset).limit(page_size).all()
         total = self.db.query(Document).count()
@@ -30,7 +29,6 @@ class DocumentService:
         }
 
     def get_document(self, document_id: int) -> Optional[Dict]:
-        """Get a single document with its content"""
         document = self.db.query(Document).filter(Document.id == document_id).first()
         if not document:
             return None
@@ -53,7 +51,6 @@ class DocumentService:
         }
 
     def get_document_chunk(self, document_id: int, chunk_index: int, chunk_size: int = 5000) -> Optional[Dict]:
-        """Get a chunk of document content"""
         document = self.db.query(Document).filter(Document.id == document_id).first()
         if not document:
             return None
@@ -78,17 +75,14 @@ class DocumentService:
         }
 
     def batch_process_documents(self, document_ids: List[int], operation: str, params: Dict = None) -> Dict:
-        """Process multiple documents in batch"""
         documents = self.db.query(Document).filter(Document.id.in_(document_ids)).all()
         if len(documents) != len(document_ids):
             return {"error": "Some document IDs not found"}
         
         if operation == "preprocess":
-            # Add preprocessing logic here
             return {"status": "success", "processed": len(documents)}
         
         elif operation == "identify_themes":
-            # Get document content
             documents_with_content = []
             for doc in documents:
                 if os.path.exists(doc.content_path):
@@ -100,11 +94,9 @@ class DocumentService:
                         "content": content
                     })
             
-            # Process documents for theme identification
             max_themes = params.get("max_themes", 5) if params else 5
             relevance_threshold = params.get("relevance_threshold", 0.7) if params else 0.7
             
-            # This would call your theme identification service
             from app.services.theme_identification import identify_themes_across_documents
             themes = identify_themes_across_documents(
                 documents_with_content, 

@@ -1,11 +1,6 @@
-"""
-Theme identification module for the document research and theme identification chatbot.
-This module analyzes document matches and identifies common themes across them.
-"""
-
+import re
 import logging
-import os
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import json
 import google.generativeai as genai
 from app.config import settings
@@ -14,14 +9,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
-# Configure Gemini
 genai.configure(api_key=settings.GEMINI_API_KEY)
 model = genai.GenerativeModel(settings.MODEL_NAME)
 
 def identify_themes(matches: List[Dict[str, Any]], theme_count: int = 3) -> List[Dict[str, Any]]:
-    """
-    Identify common themes across document matches.
-    """
     if not matches:
         logger.warning("No matches provided to identify_themes")
         return []
@@ -32,7 +23,6 @@ def identify_themes(matches: List[Dict[str, Any]], theme_count: int = 3) -> List
     
     logger.info(f"Identifying {theme_count} themes across {len(matches)} document matches")
     
-    # Prepare the input data for theme identification
     documents_text = []
     document_ids = []
     
@@ -47,7 +37,6 @@ def identify_themes(matches: List[Dict[str, Any]], theme_count: int = 3) -> List
         prompt = create_theme_identification_prompt(documents_text, theme_count)
         themes = call_gemini_api(prompt)
         
-        # Process and format the identified themes
         formatted_themes = format_themes(themes, document_ids)
         logger.info(f"Successfully identified {len(formatted_themes)} themes")
         
@@ -58,8 +47,6 @@ def identify_themes(matches: List[Dict[str, Any]], theme_count: int = 3) -> List
         return []
 
 def create_theme_identification_prompt(documents: List[Dict[str, str]], theme_count: int) -> str:
-    """Create a prompt for the Gemini API to identify themes."""
-    
     prompt = f"""Analyze the following document excerpts and identify exactly {theme_count} common themes across them.
 
 For each document excerpt, I've provided:
@@ -81,24 +68,29 @@ For each theme:
 3. List the document IDs that support this theme
 4. Include a short evidence quote or explanation from the documents
 
-Format your response as a JSON array with the following structure:
+IMPORTANT: Your response MUST be a valid JSON array with the following structure:
 [
   {{
     "theme_name": "Clear Theme Name",
     "summary": "Brief summary of the theme",
     "supporting_documents": ["Doc1", "Doc2"],
     "evidence": "Brief evidence for this theme from the documents"
-  }},
-  // Additional themes...
+  }}
+  {', {...}' if theme_count > 1 else ''}
 ]
 
-Ensure you return EXACTLY {theme_count} themes in valid JSON format.
+STRICTLY follow these rules:
+1. Return EXACTLY {theme_count} themes
+2. ONLY return a JSON array and nothing else - no explanations, no comments, no code blocks
+3. Ensure proper JSON formatting with double quotes for strings and properties
+4. Do not include trailing commas after the last item in arrays or objects
+
+Return only the raw JSON array.
 """
     
     return prompt
 
 def call_gemini_api(prompt: str) -> List[Dict[str, Any]]:
-    """Call the Gemini API to process the theme identification."""
     
     logger.info("Calling Gemini API for theme identification")
     
@@ -106,17 +98,40 @@ def call_gemini_api(prompt: str) -> List[Dict[str, Any]]:
         response = model.generate_content(prompt)
         content = response.text
         
-        # Extract JSON from the response
-        themes = json.loads(content)
-        return themes
+        # Clean up the response in case it contains markdown code blocks
+        content = content.strip()
+        if content.startswith("```json"):
+            content = content[7:].strip()
+        elif content.startswith("```"):
+            content = content[3:].strip()
+        if content.endswith("```"):
+            content = content[:-3].strip()
+        
+        try:
+            themes = json.loads(content)
+            return themes
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON parsing error: {str(e)}")
+            logger.error(f"Raw response content: {content[:500]}")
+            
+            json_pattern = r'(\[.*\])'
+            json_match = re.search(json_pattern, content, re.DOTALL)
+            
+            if json_match:
+                try:
+                    themes = json.loads(json_match.group(1))
+                    logger.info("Successfully extracted JSON from partial response")
+                    return themes
+                except json.JSONDecodeError:
+                    logger.error("Failed to extract valid JSON from response")
+            
+            return []
     
     except Exception as e:
         logger.error(f"API request error: {str(e)}")
         raise
 
 def format_themes(themes: List[Dict[str, Any]], document_ids: List[str]) -> List[Dict[str, Any]]:
-    """Format the themes data for the API response."""
-    
     formatted_themes = []
     
     for i, theme in enumerate(themes):
@@ -128,11 +143,9 @@ def format_themes(themes: List[Dict[str, Any]], document_ids: List[str]) -> List
             "evidence": theme.get("evidence", "No evidence provided")
         }
         
-        # Verify supporting documents actually exist in our document set
         valid_docs = [doc for doc in formatted_theme["supporting_documents"] if doc in document_ids]
         formatted_theme["supporting_documents"] = valid_docs
         
-        # Only include themes that have supporting documents
         if valid_docs:
             formatted_themes.append(formatted_theme)
     
@@ -143,18 +156,12 @@ async def identify_themes_across_documents(
     max_themes: int = 5,
     relevance_threshold: float = 0.7
 ) -> List[Dict[str, Any]]:
-    """
-    Identify themes across multiple documents efficiently
-    """
-    # Process documents in parallel with a limit
     max_workers = min(settings.MAX_DOCUMENTS_PER_BATCH, len(documents))
     themes = []
     
     async def process_document(doc: Dict[str, Any]) -> List[Dict[str, Any]]:
-        # Extract key sections from the document
         sections = extract_key_sections(doc["content"])
         
-        # Process each section for themes
         doc_themes = []
         for section in sections:
             section_themes = await identify_themes_in_text(
@@ -166,7 +173,6 @@ async def identify_themes_across_documents(
         
         return doc_themes
 
-    # Process documents in parallel
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         loop = asyncio.get_event_loop()
         tasks = [
@@ -175,17 +181,14 @@ async def identify_themes_across_documents(
         ]
         results = await asyncio.gather(*tasks)
     
-    # Combine and deduplicate themes
     all_themes = []
     for doc_themes in results:
         all_themes.extend(doc_themes)
     
-    # Merge similar themes and sort by relevance
     merged_themes = merge_similar_themes(all_themes)
     return sorted(merged_themes, key=lambda x: x["relevance"], reverse=True)[:max_themes]
 
 def extract_key_sections(content: str, max_sections: int = 5) -> List[str]:
-    """Extract key sections from document content"""
     paragraphs = content.split("\n\n")
     sections = []
     if paragraphs:
@@ -205,7 +208,6 @@ async def identify_themes_in_text(
     max_themes: int = 5,
     relevance_threshold: float = 0.7
 ) -> List[Dict[str, Any]]:
-    """Identify themes in a text using Gemini"""
     try:
         prompt = f"""Identify up to {max_themes} key themes in this text. For each theme, provide:
 1. Theme name
@@ -218,7 +220,6 @@ Text: {text[:4000]}"""
         response = model.generate_content(prompt)
         content = response.text
         
-        # Parse the response
         themes = []
         theme_blocks = content.split("\n\n")
         for block in theme_blocks:
@@ -244,7 +245,6 @@ Text: {text[:4000]}"""
         return []
 
 def merge_similar_themes(themes: List[Dict[str, Any]], similarity_threshold: float = 0.8) -> List[Dict[str, Any]]:
-    """Merge similar themes based on name similarity"""
     merged = []
     used = set()
     
@@ -269,7 +269,6 @@ def merge_similar_themes(themes: List[Dict[str, Any]], similarity_threshold: flo
     return merged
 
 def are_themes_similar(theme1: str, theme2: str, threshold: float) -> bool:
-    """Check if two themes are similar based on their names"""
     words1 = set(theme1.lower().split())
     words2 = set(theme2.lower().split())
     

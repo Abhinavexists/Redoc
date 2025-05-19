@@ -3,7 +3,7 @@ import re
 import logging
 import hashlib
 from langchain_chroma import Chroma
-from .gemini_embeddings import GeminiEmbeddings
+from app.services.vectorstore.gemini_embeddings import GeminiEmbeddings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ def extract_page_info(text):
     logger.info("No page number found in text")
     return None
 
-def extract_paragraph_info(text, filename):
+def extract_paragraph_info(text):
     content_start = text.strip()[:50].strip()
     hash_obj = hashlib.md5(content_start.encode())
     paragraph_id = int(hash_obj.hexdigest()[:8], 16) % 100

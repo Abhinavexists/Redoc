@@ -1,24 +1,17 @@
-import os
-from typing import List, Dict, Any
-import google.generativeai as genai
-from dotenv import load_dotenv
-from collections import defaultdict
 import re
 import logging
+from typing import List, Dict, Any
+import google.generativeai as genai
+from collections import defaultdict
+from app.config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-load_dotenv()
-
-api_key = os.getenv("GEMINI_API_KEY")
-if not api_key:
-    raise ValueError("GEMINI_API_KEY environment variable not set")
-
-genai.configure(api_key=api_key)
-
+genai.configure(api_key=settings.GEMINI_API_KEY)
+genai.model_name = settings.MODEL_NAME
 class ThemeIdentifier:
-    def __init__(self, model_name: str = "gemini-2.0-flash"):
+    def __init__(self, model_name: str = settings.MODEL_NAME):
         self.model_name = model_name
         logger.info(f"Initializing ThemeIdentifier with model: {model_name}")
         try:

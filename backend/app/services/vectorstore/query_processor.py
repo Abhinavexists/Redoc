@@ -1,47 +1,20 @@
-"""
-Query processor for extracting information from documents.
-This module handles document searching with filtering options and relevance thresholds.
-"""
-
-import logging
-from typing import List, Dict, Any, Optional
-import os
+import re
 import json
+import logging
 import requests
+from typing import List, Dict, Any, Optional
+from app.config import settings
 from app.config import SessionLocal
 from app.models.document import Document
-from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-# Get API key from environment variable
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
-    logger.warning("OpenAI API key not found in environment, query processing will be limited")
-
-def process_query(
-    query: str, 
-    document_ids: Optional[List[int]] = None, 
-    relevance_threshold: float = 0.7,
-    advanced_mode: bool = False
-) -> List[Dict[str, Any]]:
-    """
-    Process a query against the document collection.
-    
-    Parameters:
-    - query: The user's query string
-    - document_ids: Optional list of document IDs to restrict the search to
-    - relevance_threshold: Minimum relevance score (0.5-0.95) to include a match
-    - advanced_mode: Use more sophisticated query processing for complex queries
-    
-    Returns:
-    - List of document matches with extracted text and citation information
-    """
+def process_query(query: str, document_ids: Optional[List[int]] = None, relevance_threshold: float = 0.7, advanced_mode: bool = False) -> List[Dict[str, Any]]:
     logger.info(f"Processing query: '{query}'")
     if document_ids:
         logger.info(f"Restricting search to document IDs: {document_ids}")
     
-    # Get documents to search
     db = SessionLocal()
     try:
         if document_ids:
@@ -58,11 +31,9 @@ def process_query(
             
         logger.info(f"Searching across {len(documents)} documents")
         
-        # Use OpenAI to extract information from the documents
-        if OPENAI_API_KEY:
-            matches = search_with_openai(query, documents, relevance_threshold, advanced_mode)
+        if settings.GEMINI_API_KEY:
+            matches = search_with_gemini(query, documents, relevance_threshold, advanced_mode)
         else:
-            # Fallback to simpler search if API key not available
             matches = basic_document_search(query, documents)
         
         logger.info(f"Found {len(matches)} relevant matches")
@@ -71,23 +42,12 @@ def process_query(
     finally:
         db.close()
 
-def search_with_openai(
-    query: str, 
-    documents: List[Document], 
-    relevance_threshold: float,
-    advanced_mode: bool
-) -> List[Dict[str, Any]]:
-    """
-    Search documents using OpenAI's capabilities for better understanding.
-    """
-    # Prepare documents for search
+def search_with_gemini(query: str, documents: List[Document], relevance_threshold: float, advanced_mode: bool) -> List[Dict[str, Any]]:
     doc_contents = []
     for doc in documents:
         try:
-            # Read the content from the file
             with open(doc.content_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-                
             doc_contents.append({
                 "id": doc.id,
                 "filename": doc.filename,
@@ -101,178 +61,278 @@ def search_with_openai(
         logger.warning("No document contents available for search")
         return []
     
-    # Create a prompt for document search
     system_prompt = "You are a research assistant that helps find relevant information in documents."
-    
+
     if advanced_mode:
-        user_prompt = f"""I need to find information across multiple documents related to this query:
-"{query}"
+        user_prompt_template = f"""I need to find information across multiple documents related to this query:
+    "{query}"
 
-For each document, analyze the content and extract only the most relevant sections that directly answer the query.
-Only include text that is truly relevant with a confidence level of at least {relevance_threshold * 100}%.
+    For each document, analyze the content and extract only the most relevant sections that directly answer the query.
+    Only include text that is truly relevant with a confidence level of at least {relevance_threshold * 100}%.
 
-If a document doesn't contain relevant information, exclude it from results.
+    If a document doesn't contain relevant information, exclude it from results.
 
-For each relevant document section, provide:
-1. The document filename
-2. The exact text that answers the query (keep it focused and concise)
-3. Specify which paragraph/section number if possible
-4. Rate the relevance from 0.5 to 1.0 (only include text with relevance >= {relevance_threshold})
+    For each relevant document section, provide:
+    1. The document filename
+    2. The exact text that answers the query (keep it focused and concise)
+    3. IMPORTANT: Always identify and include the paragraph number (indicate as a number)
+    4. IMPORTANT: If available, include the page number where this text appears (indicate as a number)
+    5. Rate the relevance from 0.5 to 1.0 (only include text with relevance >= {relevance_threshold})
 
-Format as JSON:
-[
-  {{
-    "id": document_id,
-    "filename": "filename.pdf",
-    "matched_text": "relevant text that directly answers the query...",
-    "paragraph": paragraph_number_if_available,
-    "relevance": relevance_score,
-    "citation": "formatted citation for this source"
-  }}
-]
+    Format as JSON:
+    [
+    {{
+        "id": document_id,
+        "filename": "filename.pdf",
+        "matched_text": "relevant text...",
+        "paragraph": paragraph_number (as integer),
+        "page": page_number_if_available (as integer),
+        "relevance": relevance_score,
+        "citation": "formatted citation for this source"
+    }}
+    ]
 
-Only return the JSON array. Include at most 10 most relevant matches across all documents."""
+    The paragraph and page fields must be numeric values (not strings).
+    Only return the JSON array. Include at most 10 most relevant matches."""
+        
     else:
-        user_prompt = f"""Find relevant information in the following documents for this query:
-"{query}"
+        user_prompt_template = f"""Find relevant information in the following documents for this query:
+    "{query}"
 
-Return only sections that are directly relevant to the query with a confidence of at least {relevance_threshold * 100}%.
-Format as JSON:
-[
-  {{
-    "id": document_id,
-    "filename": "filename.pdf",
-    "matched_text": "the relevant text extract...",
-    "paragraph": paragraph_number_if_available,
-    "relevance": relevance_score,
-    "citation": "citation for this source"
-  }}
-]
+    Return only sections that are directly relevant to the query with a confidence of at least {relevance_threshold * 100}%.
+    Format as JSON:
+    [
+    {{
+        "id": document_id,
+        "filename": "filename.pdf",
+        "matched_text": "relevant text...",
+        "paragraph": paragraph_number (as integer),
+        "page": page_number_if_available (as integer),
+        "relevance": relevance_score,
+        "citation": "citation for this source"
+    }}
+    ]
 
-Only return the JSON array. Include at most 10 most relevant matches."""
+    IMPORTANT: Always include the paragraph number as a numeric value. If the section starts with a number (like "2 Background"), use that as the paragraph/section number.
+    The paragraph and page fields must be numeric values (not strings).
+    Only return the JSON array. Include at most 10 most relevant matches."""
     
-    # Send the documents content in chunks if needed
     matches = []
-    chunk_size = 5  # Process 5 documents at a time
+    chunk_size = 5      
     
     for i in range(0, len(doc_contents), chunk_size):
-        chunk = doc_contents[i:i+chunk_size]
-        
-        # Add document content to the prompt
+        chunk = doc_contents[i:i + chunk_size]
         docs_prompt = "\n\nDocuments to search:\n"
+
         for doc in chunk:
-            # Truncate content if too long
             content = doc["content"]
             if len(content) > 8000:
                 content = content[:8000] + "... [content truncated]"
-                
             docs_prompt += f"\nDOCUMENT ID: {doc['id']}, FILENAME: {doc['filename']}\n{content}\n---\n"
-        
-        full_prompt = user_prompt + docs_prompt
+
+        full_prompt = user_prompt_template + docs_prompt
         
         try:
-            # Call OpenAI API
-            logger.info(f"Calling OpenAI API for search (chunk {i//chunk_size + 1}/{(len(doc_contents) + chunk_size - 1)//chunk_size})")
-            chunk_matches = call_openai_api(system_prompt, full_prompt)
-            
-            # Filter matches by relevance
+            logger.info(f"Calling Gemini API for search (chunk {i // chunk_size + 1}/{(len(doc_contents) + chunk_size - 1) // chunk_size})")
+            chunk_matches = call_gemini_api(system_prompt, full_prompt)
             chunk_matches = [m for m in chunk_matches if m.get("relevance", 0) >= relevance_threshold]
             matches.extend(chunk_matches)
         except Exception as e:
-            logger.error(f"Error searching chunk {i//chunk_size + 1}: {str(e)}")
+            logger.error(f"Error searching chunk {i // chunk_size + 1}: {str(e)}")
     
-    # Sort by relevance (descending)
     matches.sort(key=lambda x: x.get("relevance", 0), reverse=True)
-    
-    # Limit to top 10 most relevant matches
     return matches[:10]
 
-def call_openai_api(system_prompt: str, user_prompt: str) -> List[Dict[str, Any]]:
-    """Call the OpenAI API to process document search."""
-    
-    url = "https://api.openai.com/v1/chat/completions"
+def call_gemini_api(system_prompt: str, user_prompt: str) -> List[Dict[str, Any]]:
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.MODEL_NAME}:generateContent?key={settings.GEMINI_API_KEY}"
     headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {OPENAI_API_KEY}"
+        "Content-Type": "application/json"
     }
-    
     data = {
-        "model": "gpt-4-turbo-preview",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {"text": f"{system_prompt}\n\n{user_prompt}"}
+                ]
+            }
         ],
-        "temperature": 0.2,  # Lower temperature for more focused results
-        "max_tokens": 4000,
-        "response_format": {"type": "json_object"}
+        "generationConfig": {
+            "temperature": 0.2,
+            "maxOutputTokens": 4000
+        }
     }
-    
+
     try:
         response = requests.post(url, headers=headers, json=data)
         response.raise_for_status()
-        
         response_data = response.json()
-        content = response_data["choices"][0]["message"]["content"]
-        
-        # Parse JSON response
-        result = json.loads(content)
-        
-        # Handle different response formats
-        if isinstance(result, dict) and "matches" in result:
+
+        raw_content = response_data["candidates"][0]["content"]["parts"][0]["text"]
+
+        cleaned = raw_content.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[len("```json"):].strip()
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[len("```"):].strip()
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3].strip()
+
+        result = json.loads(cleaned)
+
+        if isinstance(result, list):
+            for item in result:
+                if "paragraph" not in item or item["paragraph"] is None:
+                    if "citation" in item and "para" in item["citation"].lower():
+                        para_match = re.search(r'para(?:graph)?\s*(\d+)', item["citation"].lower())
+                        if para_match:
+                            item["paragraph"] = int(para_match.group(1))
+                    
+                    matched_text = item.get("matched_text", "")
+                    section_match = re.match(r'^\s*(\d+)\s+', matched_text)
+                    if section_match and "paragraph" not in item:
+                        item["paragraph"] = int(section_match.group(1))
+                
+                if "page" not in item or item["page"] is None:
+                    if "citation" in item and "page" in item["citation"].lower():
+                        page_match = re.search(r'page\s*(\d+)', item["citation"].lower())
+                        if page_match:
+                            item["page"] = int(page_match.group(1))
+                
+                filename = item.get("filename", "Unknown document")
+                paragraph = item.get("paragraph")
+                page = item.get("page")
+                
+                doc_title = filename.split('.')[0].replace('_', ' ').title()
+                current_year = 2023  
+                
+                matched_text = item.get("matched_text", "")
+                
+                authors = "Author et al."
+                author_match = re.search(r'([A-Z][a-z]+(?:\s+[A-Z]\.|,?\s+and\s+[A-Z][a-z]+)+)', matched_text)
+                if author_match:
+                    authors = author_match.group(1)
+                    if len(authors) > 30:  
+                        authors = authors.split(',')[0] + " et al."
+                
+                source = ""
+                source_match = re.search(r'((?:Journal|Conference|Proceedings|IEEE|ACM)\s+[^\.]+)', matched_text)
+                if source_match:
+                    source = source_match.group(1)
+                    if len(source) > 40:    
+                        source = source[:40] + "..."
+                
+                year_match = re.search(r'(?:19|20)\d{2}', matched_text)
+                pub_year = year_match.group(0) if year_match else str(current_year)
+                
+                doi = ""
+                doi_match = re.search(r'(doi:[\w\.\/\-]+|https://doi.org/[\w\.\/\-]+)', matched_text, re.IGNORECASE)
+                if doi_match:
+                    doi = doi_match.group(1)
+                
+                citation = f"{authors} ({pub_year}). {doc_title}"
+                
+                if source:
+                    citation += f". {source}"
+                
+                if doi:
+                    citation += f". {doi}"
+                
+                if page:
+                    citation += f", p. {page}"
+                if paragraph:
+                    citation += f", sec. {paragraph}"
+                
+                item["citation"] = citation
+            
+            return result
+        elif isinstance(result, dict) and "matches" in result:
             return result["matches"]
         elif isinstance(result, dict) and "results" in result:
             return result["results"]
-        elif isinstance(result, list):
-            return result
         else:
-            logger.warning("Unexpected response format, returning empty list")
+            logger.warning("Unexpected format in parsed result")
             return []
-    
+
     except requests.exceptions.RequestException as e:
         logger.error(f"API request error: {str(e)}")
         raise
-    
     except (json.JSONDecodeError, KeyError) as e:
         logger.error(f"Error parsing API response: {str(e)}")
-        logger.error(f"Response content: {content if 'content' in locals() else 'N/A'}")
+        logger.error(f"Response content: {raw_content if 'raw_content' in locals() else 'N/A'}")
         return []
 
 def basic_document_search(query: str, documents: List[Document]) -> List[Dict[str, Any]]:
-    """Simple keyword-based document search as a fallback."""
-    
     matches = []
     query_terms = query.lower().split()
-    
+
     for doc in documents:
         try:
             with open(doc.content_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-            
-            # Split content into paragraphs
+
             paragraphs = content.split('\n\n')
-            
             for i, para in enumerate(paragraphs):
-                # Simple relevance calculation based on term frequency
                 relevance = 0
                 for term in query_terms:
                     if term in para.lower():
                         relevance += 0.1
-                
-                # Only include if somewhat relevant
+
                 if relevance >= 0.2:
+                    page = None
+                    page_match = re.search(r"--- Page (\d+) ---", para)
+                    if page_match:
+                        page = int(page_match.group(1))
+                    
+                    doc_title = doc.filename.split('.')[0].replace('_', ' ').title()
+                    current_year = 2023  
+                    
+                    authors = "Author et al."
+                    author_match = re.search(r'([A-Z][a-z]+(?:\s+[A-Z]\.|,?\s+and\s+[A-Z][a-z]+)+)', para)
+                    if author_match:
+                        authors = author_match.group(1)
+                        if len(authors) > 30:  
+                            authors = authors.split(',')[0] + " et al."
+                    
+                    source = ""
+                    source_match = re.search(r'((?:Journal|Conference|Proceedings|IEEE|ACM)\s+[^\.]+)', para)
+                    if source_match:
+                        source = source_match.group(1)
+                        if len(source) > 40:  
+                            source = source[:40] + "..."
+                    
+                    year_match = re.search(r'(?:19|20)\d{2}', para)
+                    pub_year = year_match.group(0) if year_match else str(current_year)
+                    
+                    doi = ""
+                    doi_match = re.search(r'(doi:[\w\.\/\-]+|https://doi.org/[\w\.\/\-]+)', para, re.IGNORECASE)
+                    if doi_match:
+                        doi = doi_match.group(1)
+                    
+                    citation = f"{authors} ({pub_year}). {doc_title}"
+                    
+                    if source:
+                        citation += f". {source}"
+                    
+                    if doi:
+                        citation += f". {doi}"
+                    
+                    if page:
+                        citation += f", p. {page}"
+                    citation += f", sec. {i + 1}"
+                    
                     matches.append({
                         "id": doc.id,
                         "filename": doc.filename,
                         "matched_text": para,
                         "paragraph": i + 1,
-                        "relevance": min(relevance, 1.0),  # Cap at 1.0
-                        "citation": f"{doc.filename}, paragraph {i+1}"
+                        "page": page,
+                        "relevance": min(relevance, 1.0),
+                        "citation": citation
                     })
+
         except Exception as e:
             logger.error(f"Error processing document {doc.id}: {str(e)}")
-    
-    # Sort by relevance
+
     matches.sort(key=lambda x: x.get("relevance", 0), reverse=True)
-    
-    # Limit to top 10
-    return matches[:10] 
+    return matches[:10]

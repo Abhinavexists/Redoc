@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Body
+import logging
+from pydantic import BaseModel
+from typing import List, Optional
+from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, Body
 from app.services.vectorstore.query_processor import process_query
 from app.services.theme_identification import identify_themes
 from app.config import SessionLocal
 from app.models.document import Document
-from typing import List, Optional
-from sqlalchemy.orm import Session
-import logging
-from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -34,14 +34,10 @@ async def query_documents(
     request: QueryRequest = Body(...),
     db: Session = Depends(get_db)
 ):
-    """
-    Process a query against the document database.
-    """
+    
     try:
-        # Parse document_ids if provided
         selected_docs = None
         if request.document_ids:
-            # Verify all document IDs exist
             selected_docs = db.query(Document).filter(Document.id.in_(request.document_ids)).all()
             if len(selected_docs) != len(request.document_ids):
                 found_ids = [doc.id for doc in selected_docs]
@@ -54,7 +50,6 @@ async def query_documents(
         if selected_docs:
             logger.info(f"Selected document IDs: {[doc.id for doc in selected_docs]}")
         
-        # Process the query
         matches = process_query(
             request.query, 
             document_ids=[doc.id for doc in selected_docs] if selected_docs else None,
@@ -62,10 +57,13 @@ async def query_documents(
             advanced_mode=request.advanced_mode
         )
         
-        # Identify themes if enabled
         themes = None
         if request.enable_themes and matches:
-            themes = identify_themes(matches, theme_count=request.theme_count)
+            try:
+                themes = identify_themes(matches, theme_count=request.theme_count)
+            except Exception as e:
+                logger.error(f"Error in theme identification: {str(e)}")
+                themes = []
         
         return {
             "query": request.query,

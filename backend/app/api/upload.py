@@ -99,7 +99,3 @@ async def upload_document(
             os.remove(temp_file_path)
         
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
-    
-        
-    
-    

@@ -7,7 +7,6 @@ from langchain_chroma import Chroma
 from .gemini_embeddings import GeminiEmbeddings
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.docstore.document import Document as LC_Document
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

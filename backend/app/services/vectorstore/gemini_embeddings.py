@@ -1,16 +1,9 @@
 import google.generativeai as genai
 from langchain.embeddings.base import Embeddings
 from typing import List
-import os
-from dotenv import load_dotenv
+from app.config import settings
 
-load_dotenv()
-
-api_key = os.getenv("GEMINI_API_KEY")
-if not api_key:
-    raise ValueError("GEMINI_API_KEY environment variable not set. Please set it in your .env file.")
-
-genai.configure(api_key=api_key)
+genai.configure(api_key=settings.GEMINI_API_KEY)
 
 class GeminiEmbeddings(Embeddings):
     def __init__(self, model_name: str = "models/embedding-001"):
