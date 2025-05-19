@@ -17,11 +17,9 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'query' | 'batch'>('query');
   const [identifiedThemes, setIdentifiedThemes] = useState<Theme[]>([]);
 
-  // Determine if we're dealing with a large document set
   const isLargeDocumentSet = selectedDocuments.length > 50;
 
   useEffect(() => {
-    // If a large document set is selected, suggest batch analysis
     if (isLargeDocumentSet && activeTab === 'query') {
       setActiveTab('batch');
     }

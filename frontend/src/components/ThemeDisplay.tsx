@@ -11,7 +11,7 @@ interface ThemeDisplayProps {
   themes: Theme[];
 }
 
-const BATCH_SIZE = 5; // Number of themes to render initially and on each "load more"
+const BATCH_SIZE = 5;
 
 const ThemeDisplay: React.FC<ThemeDisplayProps> = ({ themes }) => {
   const [activeView, setActiveView] = useState<'list' | 'chart'>('list');
@@ -36,15 +36,12 @@ const ThemeDisplay: React.FC<ThemeDisplayProps> = ({ themes }) => {
     return null;
   }
 
-  // Apply search and filtering
   const filteredThemes = useMemo(() => {
     return themes.filter(theme => {
-      // Apply search term filtering to theme name and summary
       const matchesSearch = !searchTerm || 
         theme.theme_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         theme.summary.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Apply document name filtering
       const matchesDocFilter = !filterDocName || 
         theme.supporting_documents.some(doc => 
           doc.toLowerCase().includes(filterDocName.toLowerCase())
@@ -54,14 +51,12 @@ const ThemeDisplay: React.FC<ThemeDisplayProps> = ({ themes }) => {
     });
   }, [themes, searchTerm, filterDocName]);
 
-  // Get only the themes we should display based on current pagination
   const themesToDisplay = filteredThemes.slice(0, visibleThemes);
   
   const getThemeColor = (index: number) => {
     return themeColors[index % themeColors.length];
   };
 
-  // Build document-theme matrix for visualization
   const allDocuments = useMemo(() => {
     return Array.from(
       new Set(themes.flatMap(theme => theme.supporting_documents))

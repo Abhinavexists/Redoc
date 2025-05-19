@@ -44,10 +44,8 @@ const LargeDocumentAnalyzer: React.FC<LargeDocumentAnalyzerProps> = ({
       setThemes([]);
       setAnalysisComplete(false);
 
-      // Step 1: Load document metadata (if needed)
       setProgressStage('Loading document metadata');
       
-      // Step 2: Process documents in batches
       setProgressStage('Processing documents');
       await documentProcessor.processBatches(
         documentIds, 
@@ -58,26 +56,22 @@ const LargeDocumentAnalyzer: React.FC<LargeDocumentAnalyzerProps> = ({
         }
       );
       
-      // Step 3: Identify themes across documents
       setProgressStage('Identifying themes');
       const identifiedThemes = await documentProcessor.identifyThemesAcrossDocuments(
         documentIds,
         maxThemes,
         relevanceThreshold,
         (processed, total) => {
-          // Scale progress from 40% to 90%
           setProgress(40 + Math.floor((processed / total) * 50));
         }
       );
       
-      // Step 4: Finalize results
       setProgressStage('Finalizing results');
       setProgress(100);
       setThemes(identifiedThemes);
       setAnalysisComplete(true);
       setIsAnalyzing(false);
       
-      // Notify parent component if callback provided
       if (onComplete) {
         onComplete(identifiedThemes);
       }

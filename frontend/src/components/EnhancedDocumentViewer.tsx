@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, FileText, ChevronLeft, ChevronRight, Download, Loader2, Highlighter, BookOpen, AlignJustify, Text } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from './ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs.js';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -151,6 +151,27 @@ const EnhancedDocumentViewer: React.FC<EnhancedDocumentViewerProps> = ({
     );
   };
 
+  const handleDownload = () => {
+    if (!document || !document.content) return;
+    
+    // Create a blob with the document content
+    const blob = new Blob([document.content], { type: 'text/plain' });
+    
+    // Create a URL for the blob
+    const url = URL.createObjectURL(blob);
+    
+    // Create a temporary anchor element and trigger the download
+    const a = window.document.createElement('a');
+    a.href = url;
+    a.download = document.filename || `document_${documentId}.txt`;
+    window.document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    window.document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <Card className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -212,99 +233,97 @@ const EnhancedDocumentViewer: React.FC<EnhancedDocumentViewerProps> = ({
               <TabsTrigger value="content">Content</TabsTrigger>
               <TabsTrigger value="metadata">Metadata</TabsTrigger>
             </TabsList>
-          </Tabs>
-        </div>
-        
-        <CardContent className="flex-1 overflow-hidden">
-          <TabsContent value="content" className="h-full flex flex-col">
-            <div className="flex justify-between items-center mb-4">
-              <div className="text-sm text-muted-foreground">
-                {hasHighlightedSections ? 
-                  `${Object.keys(highlightedSections).length} highlighted sections` : 
-                  'No highlighted sections'}
+            
+            <TabsContent value="content" className="pt-6 px-2 pb-2">
+              <div className="flex justify-between items-center mb-4">
+                <div className="text-sm text-muted-foreground">
+                  {hasHighlightedSections ? 
+                    `${Object.keys(highlightedSections).length} highlighted sections` : 
+                    'No highlighted sections'}
+                </div>
+                
+                <ToggleGroup type="single" value={viewMode} onValueChange={(value: any) => value && setViewMode(value as any)}>
+                  <ToggleGroupItem value="document" aria-label="View as document">
+                    <BookOpen className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="paragraph" aria-label="View by paragraph">
+                    <AlignJustify className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="sentence" aria-label="View by sentence">
+                    <Text className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
               
-              <ToggleGroup type="single" value={viewMode} onValueChange={(value: any) => value && setViewMode(value as any)}>
-                <ToggleGroupItem value="document" aria-label="View as document">
-                  <BookOpen className="h-4 w-4" />
-                </ToggleGroupItem>
-                <ToggleGroupItem value="paragraph" aria-label="View by paragraph">
-                  <AlignJustify className="h-4 w-4" />
-                </ToggleGroupItem>
-                <ToggleGroupItem value="sentence" aria-label="View by sentence">
-                  <Text className="h-4 w-4" />
-                </ToggleGroupItem>
-              </ToggleGroup>
-            </div>
-            
-            <ScrollArea className="h-[calc(100vh-260px)]">
-              <div className="p-4 text-sm leading-relaxed" ref={contentRef}>
-                {documentParagraphs.map((paragraph, index) => 
-                  renderParagraphWithSentences(paragraph, index)
-                )}
-              </div>
-            </ScrollArea>
-            
-            {hasHighlightedSections && (
-              <div className="mt-4 pt-2 border-t">
-                <div className="flex items-center gap-2 text-sm">
-                  <Highlighter className="h-4 w-4 text-yellow-500" />
-                  <span className="font-medium">Citation Legend:</span>
+              <ScrollArea className="h-[calc(100vh-260px)]">
+                <div className="p-4 text-sm leading-relaxed" ref={contentRef}>
+                  {documentParagraphs.map((paragraph, index) => 
+                    renderParagraphWithSentences(paragraph, index)
+                  )}
                 </div>
-                <div className="flex items-center gap-4 mt-2 text-xs">
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded bg-yellow-100 dark:bg-yellow-900/30"></div>
-                    <span>Strong match</span>
+              </ScrollArea>
+              
+              {hasHighlightedSections && (
+                <div className="mt-4 pt-2 border-t">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Highlighter className="h-4 w-4 text-yellow-500" />
+                    <span className="font-medium">Citation Legend:</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded bg-yellow-50 dark:bg-yellow-900/20"></div>
-                    <span>Medium match</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded bg-yellow-50/50 dark:bg-yellow-900/10"></div>
-                    <span>Weak match</span>
+                  <div className="flex items-center gap-4 mt-2 text-xs">
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded bg-yellow-100 dark:bg-yellow-900/30"></div>
+                      <span>Strong match</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded bg-yellow-50 dark:bg-yellow-900/20"></div>
+                      <span>Medium match</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded bg-yellow-50/50 dark:bg-yellow-900/10"></div>
+                      <span>Weak match</span>
+                    </div>
                   </div>
                 </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="metadata" className="pt-6 px-2 pb-2">
+              <div className="p-4">
+                <h3 className="text-sm font-medium mb-3">Document Information</h3>
+                <div className="bg-muted/30 rounded-md border p-4">
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <dt className="text-muted-foreground">File Name:</dt>
+                    <dd className="font-medium">{document.filename}</dd>
+                    
+                    <dt className="text-muted-foreground">File Type:</dt>
+                    <dd className="font-medium">{document.filetype || document.metadata?.type || 'Unknown'}</dd>
+                    
+                    <dt className="text-muted-foreground">Size:</dt>
+                    <dd className="font-medium">{document.metadata?.size || 'Unknown'}</dd>
+                    
+                    <dt className="text-muted-foreground">Author:</dt>
+                    <dd className="font-medium">{document.metadata?.author || 'Unknown'}</dd>
+                    
+                    <dt className="text-muted-foreground">Created:</dt>
+                    <dd className="font-medium">{document.metadata?.created || 'Unknown'}</dd>
+                    
+                    <dt className="text-muted-foreground">Modified:</dt>
+                    <dd className="font-medium">{document.metadata?.modified || 'Unknown'}</dd>
+                    
+                    <dt className="text-muted-foreground">Pages:</dt>
+                    <dd className="font-medium">{document.pages || document.metadata?.pages || 'Unknown'}</dd>
+                    
+                    <dt className="text-muted-foreground">Uploaded:</dt>
+                    <dd className="font-medium">{new Date(document.uploaded_at).toLocaleString()}</dd>
+                    
+                    <dt className="text-muted-foreground">Document ID:</dt>
+                    <dd className="font-medium">{document.id}</dd>
+                  </dl>
+                </div>
               </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="metadata" className="h-full">
-            <div className="p-4">
-              <h3 className="text-sm font-medium mb-3">Document Information</h3>
-              <div className="bg-muted/30 rounded-md border p-4">
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                  <dt className="text-muted-foreground">File Name:</dt>
-                  <dd className="font-medium">{document.filename}</dd>
-                  
-                  <dt className="text-muted-foreground">File Type:</dt>
-                  <dd className="font-medium">{document.filetype || document.metadata?.type || 'Unknown'}</dd>
-                  
-                  <dt className="text-muted-foreground">Size:</dt>
-                  <dd className="font-medium">{document.metadata?.size || 'Unknown'}</dd>
-                  
-                  <dt className="text-muted-foreground">Author:</dt>
-                  <dd className="font-medium">{document.metadata?.author || 'Unknown'}</dd>
-                  
-                  <dt className="text-muted-foreground">Created:</dt>
-                  <dd className="font-medium">{document.metadata?.created || 'Unknown'}</dd>
-                  
-                  <dt className="text-muted-foreground">Modified:</dt>
-                  <dd className="font-medium">{document.metadata?.modified || 'Unknown'}</dd>
-                  
-                  <dt className="text-muted-foreground">Pages:</dt>
-                  <dd className="font-medium">{document.pages || document.metadata?.pages || 'Unknown'}</dd>
-                  
-                  <dt className="text-muted-foreground">Uploaded:</dt>
-                  <dd className="font-medium">{new Date(document.uploaded_at).toLocaleString()}</dd>
-                  
-                  <dt className="text-muted-foreground">Document ID:</dt>
-                  <dd className="font-medium">{document.id}</dd>
-                </dl>
-              </div>
-            </div>
-          </TabsContent>
-        </CardContent>
+            </TabsContent>
+          </Tabs>
+        </div>
         
         <CardFooter className="border-t py-3 flex justify-between">
           <div>
@@ -324,6 +343,7 @@ const EnhancedDocumentViewer: React.FC<EnhancedDocumentViewerProps> = ({
             variant="outline" 
             size="sm" 
             className="gap-1"
+            onClick={handleDownload}
           >
             <Download className="h-4 w-4" />
             Download
