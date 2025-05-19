@@ -1,7 +1,0 @@
-fastapi==0.115.12
-fitz==0.0.1.dev2
-Pillow==11.2.1
-pytesseract==0.3.13
-python-dotenv==1.1.0
-SQLAlchemy==2.0.41
-uvicorn==0.34.2
