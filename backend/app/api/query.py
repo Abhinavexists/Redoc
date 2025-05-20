@@ -46,7 +46,7 @@ async def query_documents(
         
         logger.info(f"Processing query: '{request.query}'")
         logger.info(f"Parameters: enable_themes={request.enable_themes}, theme_count={request.theme_count}, " 
-                   f"relevance_threshold={request.relevance_threshold}, advanced_mode={request.advanced_mode}")
+                   f"relevance_threshold={request.relevance_threshold}, advanced_mode={request.advanced_mode}, citation_level={request.citation_level}")
         if selected_docs:
             logger.info(f"Selected document IDs: {[doc.id for doc in selected_docs]}")
         
@@ -54,7 +54,8 @@ async def query_documents(
             request.query, 
             document_ids=[doc.id for doc in selected_docs] if selected_docs else None,
             relevance_threshold=request.relevance_threshold,
-            advanced_mode=request.advanced_mode
+            advanced_mode=request.advanced_mode,
+            citation_level=request.citation_level
         )
         
         themes = None
@@ -74,6 +75,7 @@ async def query_documents(
                 "theme_count": request.theme_count if request.enable_themes else None,
                 "relevance_threshold": request.relevance_threshold,
                 "advanced_mode": request.advanced_mode,
+                "citation_level": request.citation_level,
                 "selected_document_count": len(selected_docs) if selected_docs else None
             }
         }

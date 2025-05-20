@@ -1,15 +1,29 @@
 import re
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Literal
 import google.generativeai as genai
 from collections import defaultdict
 from app.config import settings
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from sqlalchemy.orm import Session
+from app.config import SessionLocal
+from app.services.vectorstore.query_processor import process_query
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 genai.configure(api_key=settings.GEMINI_API_KEY)
 genai.model_name = settings.MODEL_NAME
+
+router = APIRouter()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 class ThemeIdentifier:
     def __init__(self, model_name: str = settings.MODEL_NAME):
         self.model_name = model_name
@@ -126,4 +140,60 @@ class ThemeIdentifier:
 def identify_themes(query_results: List[Dict[str, Any]], original_query: str) -> Dict:
     logger.info(f"identify_themes called with query: {original_query} and {len(query_results)} results")
     theme_identifier = ThemeIdentifier()
-    return theme_identifier.identify_themes(query_results, original_query) 
+    return theme_identifier.identify_themes(query_results, original_query)
+
+@router.get("/themes/{theme_id}/citations")
+async def get_citations_for_theme(
+    theme_id: int = Path(..., title="The ID of the theme"),
+    citation_level: Literal["document", "paragraph", "sentence"] = Query("paragraph", title="Citation granularity level"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get granular citations for a specific theme
+    """
+    try:
+        # This is a simplified implementation - in a production system,
+        # you would retrieve citations from a database where theme-document
+        # relationships are stored. For now, we'll return an example.
+        
+        # Sample theme citations
+        sample_citations = [
+            {
+                "theme_id": theme_id,
+                "document_id": 1,
+                "citation_type": citation_level,
+                "reference_id": f"sample-id-1",
+                "content": "This is a sample citation text for this theme.",
+                "relevance": 0.85,
+                "citation": "document1.pdf, Page 1, Para 2",
+                "paragraph_index": 1 if citation_level in ["paragraph", "sentence"] else None,
+                "sentence_index": 3 if citation_level == "sentence" else None
+            },
+            {
+                "theme_id": theme_id,
+                "document_id": 2,
+                "citation_type": citation_level,
+                "reference_id": f"sample-id-2",
+                "content": "Another supporting evidence for this theme.",
+                "relevance": 0.78,
+                "citation": "document2.pdf, Page 3, Para 5",
+                "paragraph_index": 4 if citation_level in ["paragraph", "sentence"] else None,
+                "sentence_index": 2 if citation_level == "sentence" else None
+            }
+        ]
+        
+        # If citation_level is "sentence", add sentence information
+        if citation_level == "sentence":
+            for citation in sample_citations:
+                if "citation" in citation and citation.get("sentence_index") is not None:
+                    citation["citation"] += f", Sentence {citation['sentence_index']}"
+        
+        return {
+            "theme_id": theme_id,
+            "citation_level": citation_level,
+            "citations": sample_citations
+        }
+    
+    except Exception as e:
+        logger.error(f"Error retrieving theme citations: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving theme citations: {str(e)}") 

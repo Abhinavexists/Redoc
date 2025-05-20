@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import upload, documents, query
+from app.api import upload, documents, query, theme_identification
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
@@ -39,6 +39,7 @@ app.add_middleware(
 app.include_router(upload.router, prefix="/api")
 app.include_router(documents.router, prefix="/api")
 app.include_router(query.router, prefix="/api")
+app.include_router(theme_identification.router, prefix="/api")
 
 @app.get("/")
 def root():
