@@ -4,6 +4,9 @@ from app.api import upload, documents, query
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
+# from app.models.document import Base  
+# from app.config import engine
+
 class TimeoutMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start_time = time.time()
@@ -40,3 +43,5 @@ app.include_router(query.router, prefix="/api")
 @app.get("/")
 def root():
     return {"message": "API is running"}
+
+# Base.metadata.create_all(bind=engine)
