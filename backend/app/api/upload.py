@@ -1,16 +1,25 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, BackgroundTasks
-from app.services.ocr import extract_text_from_pdf, extract_text_from_image, save_text_to_file
-from app.models.document import Document
-from app.services.vectorstore.document_indexing import build_vector_store
-from sqlalchemy.orm import Session
-from app.core.db import get_db
-from app.core.logging_config import setup_logging
 import os
 import asyncio
+import logging
+from sqlalchemy.orm import Session
+from app.config import SessionLocal
+from app.models.document import Document
+from app.services.vectorstore.document_indexing import build_vector_store
+from app.services.ocr import extract_text_from_pdf, extract_text_from_image, save_text_to_file
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, BackgroundTasks
 
-logger = setup_logging()
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 router = APIRouter()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 def rebuild_vector_store_task():
     try:
