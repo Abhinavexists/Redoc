@@ -1,24 +1,27 @@
 import React, { useState, useMemo } from 'react';
-import { LightbulbIcon, BookmarkIcon, BarChart3, Maximize2, List, Search, FilterIcon, RefreshCw } from 'lucide-react';
+import { LightbulbIcon, BookmarkIcon, BarChart3, Maximize2, List, Search, FilterIcon, RefreshCw, LinkIcon } from 'lucide-react';
 import type { Theme } from '../types';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
+import ThemeCitationVisualizer from './ThemeCitationVisualizer';
 
 interface ThemeDisplayProps {
   themes: Theme[];
+  onDocumentView?: (documentId: number) => void;
 }
 
 const BATCH_SIZE = 5;
 
-const ThemeDisplay: React.FC<ThemeDisplayProps> = ({ themes }) => {
+const ThemeDisplay: React.FC<ThemeDisplayProps> = ({ themes, onDocumentView }) => {
   const [activeView, setActiveView] = useState<'list' | 'chart'>('list');
   const [expandedTheme, setExpandedTheme] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDocName, setFilterDocName] = useState('');
   const [visibleThemes, setVisibleThemes] = useState(BATCH_SIZE);
+  const [selectedTheme, setSelectedTheme] = useState<number | null>(null);
 
   const themeColors = [
     { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200', light: 'bg-blue-50' },
@@ -71,9 +74,19 @@ const ThemeDisplay: React.FC<ThemeDisplayProps> = ({ themes }) => {
     setVisibleThemes(prev => prev + BATCH_SIZE);
   };
 
+  const toggleThemeCitations = (themeId: number) => {
+    setSelectedTheme(selectedTheme === themeId ? null : themeId);
+  };
+
+  const getSelectedTheme = () => {
+    if (!selectedTheme) return null;
+    return themes.find(theme => theme.id === selectedTheme);
+  };
+
   const hasMoreThemesToLoad = filteredThemes.length > visibleThemes;
 
   return (
+    <div className="space-y-6">
     <Card>
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-4">
@@ -140,6 +153,7 @@ const ThemeDisplay: React.FC<ThemeDisplayProps> = ({ themes }) => {
               {themesToDisplay.map((theme, index) => {
                 const themeColor = getThemeColor(index);
                 const isExpanded = expandedTheme === theme.id;
+                  const isCitationsSelected = selectedTheme === theme.id;
                 
                 return (
                   <div key={theme.id} className={`p-4 rounded-md border ${themeColor.border} ${themeColor.light}`}>
@@ -156,9 +170,20 @@ const ThemeDisplay: React.FC<ThemeDisplayProps> = ({ themes }) => {
                       </div>
                       
                       <div className="space-y-2">
+                          <div className="flex items-center justify-between">
                         <h4 className="text-sm font-medium">
                           Supporting Documents:
                         </h4>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleThemeCitations(theme.id)}
+                              className={`h-7 text-xs ${isCitationsSelected ? themeColor.bg : ''}`}
+                            >
+                              <LinkIcon className="h-3 w-3 mr-1" />
+                              {isCitationsSelected ? 'Hide Citations' : 'View Citations'}
+                            </Button>
+                          </div>
                         <div className="flex flex-wrap gap-1.5">
                           {theme.supporting_documents.map((doc, idx) => (
                             <Badge key={idx} variant="outline" className={`${themeColor.bg} ${themeColor.text}`}>
@@ -243,7 +268,14 @@ const ThemeDisplay: React.FC<ThemeDisplayProps> = ({ themes }) => {
                           return (
                             <td key={themeIndex} className="text-center p-2 border">
                               {supports && (
-                                <div className={`w-4 h-4 mx-auto rounded-full ${themeColor.bg}`} />
+                                  <Button
+                                    variant="ghost" 
+                                    size="sm"
+                                    className="w-4 h-4 p-0 rounded-full mx-auto"
+                                    onClick={() => toggleThemeCitations(theme.id)}
+                                  >
+                                    <div className={`w-4 h-4 rounded-full ${themeColor.bg}`} />
+                                  </Button>
                               )}
                             </td>
                           );
@@ -292,6 +324,21 @@ const ThemeDisplay: React.FC<ThemeDisplayProps> = ({ themes }) => {
         {filteredThemes.length} of {themes.length} themes displayed across {allDocuments.length} documents
       </CardFooter>
     </Card>
+      
+      {/* Theme Citation Visualizer */}
+      {selectedTheme && (
+        <div className="mt-4">
+          {getSelectedTheme() && (
+            <ThemeCitationVisualizer
+              themeId={selectedTheme}
+              themeName={getSelectedTheme()?.theme_name || ''}
+              themeColor={getThemeColor(themes.findIndex(t => t.id === selectedTheme))}
+              onDocumentView={onDocumentView}
+            />
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
