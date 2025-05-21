@@ -15,6 +15,41 @@ interface ResultsDisplayProps {
   matches: DocumentMatch[];
 }
 
+const formatCitation = (match: DocumentMatch): string => {
+  const filename = match.filename || "Unknown";
+  const page = match.page;
+  const paragraph = match.paragraph;
+  
+  const docTitle = filename
+    .split('.')
+    .slice(0, -1) // Remove file extension
+    .join('.')    // Rejoin with dots in case of multiple dots
+    .replace(/[_-]/g, ' ') // Replace underscores and hyphens with spaces
+    .replace(/\b\w/g, char => char.toUpperCase()); // Capitalize words
+  
+  // Start with document reference
+  let citation = `Reference: ${docTitle}`;
+  
+  // Add specific location details
+  const locations = [];
+  if (page) locations.push(`Page ${page}`);
+  if (paragraph) locations.push(`Paragraph ${paragraph}`);
+  
+  // Check if citation string contains sentence information
+  if (match.citation && match.citation.toLowerCase().includes('sentence')) {
+    const sentenceMatch = match.citation.match(/sentence\s+(\d+)/i);
+    if (sentenceMatch && sentenceMatch[1]) {
+      locations.push(`Sentence ${sentenceMatch[1]}`);
+    }
+  }
+  
+  if (locations.length > 0) {
+    citation += `, ${locations.join(', ')}`;
+  }
+  
+  return citation;
+};
+
 const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ matches }) => {
   if (!matches || matches.length === 0) {
     return null;
@@ -36,7 +71,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ matches }) => {
               <TableRow>
                 <TableHead className="w-[250px]">Document</TableHead>
                 <TableHead>Extracted Answer</TableHead>
-                <TableHead className="w-[120px]">Citation</TableHead>
+                <TableHead className="w-[130px]">Citation</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -69,11 +104,11 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ matches }) => {
                   </TableCell>
                   <TableCell className="text-xs">
                     <div className="italic text-muted-foreground">
-                      {match.citation}
+                      {formatCitation(match)}
                     </div>
                     {match.relevance && (
                       <div className="mt-1.5 text-[10px] text-muted-foreground">
-                        Relevance: {(match.relevance * 100).toFixed(0)}%
+                        Relevance: {match.relevance}%
                       </div>
                     )}
                   </TableCell>
