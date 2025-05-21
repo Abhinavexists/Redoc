@@ -1,6 +1,6 @@
 from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
-from app.models.document import Document
+from backend.app.models.document import Document
 import os
 
 class DocumentService:
@@ -97,7 +97,7 @@ class DocumentService:
             max_themes = params.get("max_themes", 5) if params else 5
             relevance_threshold = params.get("relevance_threshold", 0.7) if params else 0.7
             
-            from app.services.theme_identification import identify_themes_across_documents
+            from backend.app.services.theme_identification import identify_themes_across_documents
             themes = identify_themes_across_documents(
                 documents_with_content, 
                 max_themes=max_themes,

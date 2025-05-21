@@ -3,7 +3,7 @@ import re
 import logging
 import hashlib
 from langchain_chroma import Chroma
-from app.services.vectorstore.gemini_embeddings import GeminiEmbeddings
+from backend.app.services.vectorstore.gemini_embeddings import GeminiEmbeddings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

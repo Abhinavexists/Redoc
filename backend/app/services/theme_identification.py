@@ -3,7 +3,7 @@ import logging
 from typing import List, Dict, Any
 import json
 import google.generativeai as genai
-from app.config import settings
+from backend.app.config import settings
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 

@@ -85,7 +85,7 @@ npm run dev
 - [API Documentation](docs/api.md)
 - [User Guide](docs/user.md)
 - [Architecture](docs/architecture.md)
-- [Test](docs/test.md)
+- [Test](tests/test.md)
 
 ## License
 
