@@ -87,6 +87,9 @@ npm run dev
 - [Architecture](docs/architecture.md)
 - [Test](tests/test.md)
 
+## Demo
+[video](https://github.com/user-attachments/assets/4098ea40-ea06-426f-9f17-063a5af8265f)
+
 ## License
 
 MIT
