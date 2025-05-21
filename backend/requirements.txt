@@ -42,6 +42,7 @@ googleapis-common-protos==1.70.0
 greenlet==3.2.2
 grpcio==1.71.0
 grpcio-status==1.71.0
+gunicorn==23.0.0
 h11==0.16.0
 httpcore==1.0.9
 httplib2==0.22.0
@@ -53,10 +54,12 @@ humanfriendly==10.0
 idna==3.10
 importlib_metadata==8.6.1
 importlib_resources==6.5.2
+iniconfig==2.1.0
 ipython==8.12.3
 jedi==0.19.2
 Jinja2==3.1.6
 jiter==0.9.0
+joblib==1.5.0
 jsonpatch==1.33
 jsonpointer==3.0.0
 jsonschema==4.23.0
@@ -84,6 +87,7 @@ mypy_extensions==1.1.0
 nbclient==0.10.2
 nbconvert==7.16.6
 nbformat==5.10.4
+nltk==3.9.1
 numpy==2.2.5
 oauthlib==3.2.2
 onnxruntime==1.22.0
@@ -108,6 +112,7 @@ pickleshare==0.7.5
 pillow==11.2.1
 pipreqs==0.5.0
 platformdirs==4.3.8
+pluggy==1.6.0
 posthog==4.0.1
 prompt_toolkit==3.0.51
 propcache==0.3.1
@@ -127,12 +132,14 @@ pyparsing==3.2.3
 PyPika==0.48.9
 pyproject_hooks==1.2.0
 pytesseract==0.3.13
+pytest==8.3.5
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
 python-multipart==0.0.20
 PyYAML==6.0.2
 pyzmq==26.4.0
 referencing==0.36.2
+regex==2024.11.6
 requests==2.32.3
 requests-oauthlib==2.0.0
 requests-toolbelt==1.0.0
