@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, FileText, ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
+import { X, FileText, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from './ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
@@ -139,27 +139,6 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
     }
   };
 
-  const handleDownload = () => {
-    if (!document || !document.content) return;
-    
-    // Create a blob with the document content
-    const blob = new Blob([document.content], { type: 'text/plain' });
-    
-    // Create a URL for the blob
-    const url = URL.createObjectURL(blob);
-    
-    // Create a temporary anchor element and trigger the download
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = document.filename || `document_${documentId}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    
-    // Clean up
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   if (loading) {
     return (
       <Card className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -240,26 +219,26 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
                 </div>
               )}
               
-              <ScrollArea className="h-[calc(100vh-260px)]">
+              <ScrollArea className="h-[calc(100vh-320px)]">
                 <div className="p-4 text-sm leading-relaxed">
                   {formatParagraphs(currentContent)}
                 </div>
               </ScrollArea>
               
               {documentChunks.length > 1 && (
-                <div className="flex justify-between items-center mt-4 px-4 py-2 bg-muted/30 rounded-md">
+                <div className="flex justify-between items-center mt-4 mb-2 px-4 py-3 bg-muted/30 rounded-md">
                   <Button
                     variant="outline"
                     size="sm"
                     disabled={!hasPrevChunk}
                     onClick={handlePrevChunk}
-                    className="gap-1"
+                    className="gap-1 min-w-[140px] justify-start"
                   >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous Section
+                    <ChevronLeft className="h-4 w-4 flex-shrink-0" />
+                    <span className="whitespace-nowrap">Previous Section</span>
                   </Button>
                   
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-muted-foreground px-2">
                     Section {currentChunk + 1} of {documentChunks.length}
                   </div>
                   
@@ -268,10 +247,10 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
                     size="sm"
                     disabled={!hasNextChunk}
                     onClick={handleNextChunk}
-                    className="gap-1"
+                    className="gap-1 min-w-[140px] justify-end"
                   >
-                    Next Section
-                    <ChevronRight className="h-4 w-4" />
+                    <span className="whitespace-nowrap">Next Section</span>
+                    <ChevronRight className="h-4 w-4 flex-shrink-0" />
                   </Button>
                 </div>
               )}
@@ -319,16 +298,6 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
               Previous Doc
             </Button>
           </div>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-1"
-            onClick={handleDownload}
-          >
-            <Download className="h-4 w-4" />
-            Download
-          </Button>
           
           <div>
             <Button 

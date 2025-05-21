@@ -1,6 +1,6 @@
 from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
-from backend.app.models.document import Document
+from app.models.document import Document
 import os
 
 class DocumentService:

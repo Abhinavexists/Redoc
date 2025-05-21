@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, FileText, ChevronLeft, ChevronRight, Download, Loader2, Highlighter, BookOpen, AlignJustify, Text } from 'lucide-react';
+import { X, FileText, ChevronLeft, ChevronRight, Loader2, Highlighter, BookOpen, AlignJustify, Text } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from './ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
@@ -149,27 +149,6 @@ const EnhancedDocumentViewer: React.FC<EnhancedDocumentViewerProps> = ({
         })}
       </div>
     );
-  };
-
-  const handleDownload = () => {
-    if (!document || !document.content) return;
-    
-    // Create a blob with the document content
-    const blob = new Blob([document.content], { type: 'text/plain' });
-    
-    // Create a URL for the blob
-    const url = URL.createObjectURL(blob);
-    
-    // Create a temporary anchor element and trigger the download
-    const a = window.document.createElement('a');
-    a.href = url;
-    a.download = document.filename || `document_${documentId}.txt`;
-    window.document.body.appendChild(a);
-    a.click();
-    
-    // Clean up
-    window.document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   if (loading) {
@@ -338,16 +317,6 @@ const EnhancedDocumentViewer: React.FC<EnhancedDocumentViewerProps> = ({
               Previous Doc
             </Button>
           </div>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-1"
-            onClick={handleDownload}
-          >
-            <Download className="h-4 w-4" />
-            Download
-          </Button>
           
           <div>
             <Button 
