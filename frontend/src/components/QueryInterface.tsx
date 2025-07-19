@@ -14,6 +14,7 @@ import { Slider } from './ui/slider.js';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs.js';
 import { Textarea } from './ui/textarea.js';
 import { Progress } from './ui/progress';
+import { Badge } from './ui/badge';
 
 interface QueryInterfaceProps {
   onResults: (results: QueryResults) => void;
@@ -178,6 +179,11 @@ const QueryInterface: React.FC<QueryInterfaceProps> = ({
                   <Label htmlFor="theme-mode" className="flex items-center gap-1.5">
                     <Lightbulb className="h-4 w-4 text-amber-500" />
                     Identify themes across documents
+                    {!enableThemes && (
+                      <Badge variant="outline" className="ml-2 bg-amber-50 text-amber-800 border-amber-200 text-[10px]">
+                        Recommended
+                      </Badge>
+                    )}
                   </Label>
                 </div>
                 

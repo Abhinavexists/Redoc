@@ -2,5 +2,8 @@
     "postman.settings.dotenv-detection-notification-visibility": false,
     "python.analysis.extraPaths": [
         "./backend"
+    ],
+    "cursorpyright.analysis.extraPaths": [
+        "./backend"
     ]
 }

@@ -1,13 +1,13 @@
 # API Documentation
 
-This document provides information about the API endpoints available in the Wasserstoff document research and theme identification application.
+This document provides information about the API endpoints available in the Redoc document research and theme identification application.
 
 ## Base URL
 
 All API endpoints are available at the backend service URL, typically:
 
 - Development: `http://localhost:8000`
-- Production: `https://wasserstoff-production.up.railway.app/`
+- Production: `https://redoc-backend-production.up.railway.app/`
 
 ## Endpoints
 
@@ -18,6 +18,7 @@ All API endpoints are available at the backend service URL, typically:
 Retrieve a list of all uploaded documents.
 
 **Response:**
+
 ```json
 {
   "documents": [
@@ -37,9 +38,11 @@ Retrieve a list of all uploaded documents.
 Retrieve a specific document's content.
 
 **Parameters:**
+
 - `document_id` (path): The ID of the document
 
 **Response:**
+
 ```json
 {
   "id": 1,
@@ -61,10 +64,12 @@ Retrieve a specific document's content.
 Upload a new document.
 
 **Request Body:**
+
 - Form data with:
   - `file`: The document file to upload
 
 **Response:**
+
 ```json
 {
   "id": 1,
@@ -80,6 +85,7 @@ Upload a new document.
 Query documents and generate themes.
 
 **Request Body:**
+
 ```json
 {
   "query": "What are the main policy recommendations?",
@@ -88,6 +94,7 @@ Query documents and generate themes.
 ```
 
 **Response:**
+
 ```json
 {
   "query": "What are the main policy recommendations?",
@@ -117,10 +124,12 @@ Query documents and generate themes.
 Get citations for a theme at different granularity levels.
 
 **Parameters:**
+
 - `theme_id` (path): The ID of the theme
 - `citation_level` (query): The citation granularity level (document, paragraph, or sentence)
 
 **Response:**
+
 ```json
 {
   "theme_id": 1,
@@ -175,4 +184,4 @@ const themeId = 1;
 const response = await fetch(`http://localhost:8000/themes/${themeId}/citations?citation_level=sentence`);
 const data = await response.json();
 console.log(data.citations);
-``` 
+```

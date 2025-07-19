@@ -11,6 +11,6 @@ export default defineConfig({
     },
   },
   preview: {
-    allowedHosts: ['wasserstofftask-production.up.railway.app'],
+    allowedHosts: ['redoc.up.railway.app'],
   },
 })

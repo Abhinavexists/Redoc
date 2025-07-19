@@ -26,7 +26,7 @@ def main():
         print(e)
         return 1
 
-    print("\nRunning tests for Wasserstoff project...\n")
+    print("\nRunning tests for Redoc project...\n")
     
     cmd = ["pytest", "-v", current_dir]
     print(f"Executing: {' '.join(cmd)}")

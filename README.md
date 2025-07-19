@@ -1,10 +1,10 @@
-# Wasserstoff
+# Redoc
 
 Document research and theme identification application with multi-level citation capabilities.
 
 ## Overview
 
-Wasserstoff is a chatbot-style application that can:
+Redoc is a chatbot-style application that can:
 
 1. Analyze 75+ documents
 2. Identify common themes across documents
@@ -36,13 +36,15 @@ Wasserstoff is a chatbot-style application that can:
 ### Installation
 
 1. Clone the repository:
-   ```
-   git clone https://github.com/Abhinavexists/wasserstoff.git
-   cd wasserstoff
+
+   ```bash
+   git clone https://github.com/Abhinavexists/Redoc.git
+   cd Redoc
    ```
 
 2. Install backend dependencies:
-   ```
+
+   ```bash
    cd backend
    python -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
@@ -50,32 +52,36 @@ Wasserstoff is a chatbot-style application that can:
    ```
 
    **Recommended**: Install with `uv` (faster, more reliable):
-   ```
+
+   ```bash
    cd backend
    uv venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    uv pip install -e .
    ```
+
    This method leverages the `pyproject.toml` file for more consistent dependency management.
 
 3. Install frontend dependencies:
-   ```
+
+   ```bash
    cd frontend
    npm install
    ```
   
-   
 ### Running the Application
 
 #### Backend
-```
+
+```bash
 # (http://localhost:8000)
 cd backend 
 python run.py
 ```
 
 #### Frontend
-```
+
+```bash
 # Frontend (http://localhost:3000)
 npm run dev
 ```
@@ -88,6 +94,7 @@ npm run dev
 - [Test](tests/test.md)
 
 ## Demo
+
 [video](https://github.com/user-attachments/assets/4098ea40-ea06-426f-9f17-063a5af8265f)
 
 ## License

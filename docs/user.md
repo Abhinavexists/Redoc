@@ -1,19 +1,19 @@
 # User Guide
 
-Wasserstoff is a document research and theme identification application that helps you analyze multiple documents, identify common themes, and provide cited responses to your queries.
+Redoc is a document research and theme identification application that helps you analyze multiple documents, identify common themes, and provide cited responses to your queries.
 
 ## Getting Started
 
 ### Accessing the Application
 
-You can access the Wasserstoff application at:
+You can access Redoc application at:
 
-- Development: http://localhost:3000
+- Development: <http://localhost:3000>
 - Production: (Deployed URL)
 
 ### Interface Overview
 
-The Wasserstoff interface consists of several key components:
+The Redoc interface consists of several key components:
 
 1. **Search Bar**: Enter your queries here
 2. **Document List**: View and manage your uploaded documents
@@ -48,6 +48,7 @@ After performing a search, the system will automatically identify common themes 
 2. **Theme Chart View**: Visualizes the relationship between themes and documents in a matrix
 
 You can:
+
 - Filter themes by keyword using the search box
 - Filter themes by document name
 - Switch between list and chart views
@@ -65,6 +66,7 @@ To see detailed citations for a theme:
    - **Sentence**: Show sentence-level citations
 
 Each citation includes:
+
 - The document source
 - Page, paragraph, and sentence references (depending on the level)
 - The relevant content
@@ -81,7 +83,8 @@ You can narrow down the displayed themes:
 
 The system supports three levels of citation granularity:
 
-1. **Document Level**: 
+1. **Document Level**:
+
    - Citations reference only the document name
    - Example: "document1.pdf"
 
@@ -122,4 +125,4 @@ More granular citation levels provide more precise references but may result in 
 
 ### Getting Help
 
-If you encounter any issues not covered in this guide, please contact the system administrator or submit a support ticket. 
+If you encounter any issues not covered in this guide, please contact the system administrator or submit a support ticket.

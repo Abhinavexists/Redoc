@@ -14,8 +14,8 @@ It is a web application that enables users to:
 The application follows a client-server architecture with a clear separation between the frontend and backend components.
 
 ## Architecture Diagram
-![Architecture](/images/Architecture.png)
 
+![Architecture](/images/Architecture.png)
 
 ## Backend Architecture
 
@@ -23,7 +23,7 @@ The backend uses FastAPI as the web framework and follows a modular, layered arc
 
 ### Directory Structure
 
-```
+```markdown
 backend/
 ├── app/
 │   │
@@ -119,7 +119,7 @@ The frontend is built with React, TypeScript, and Tailwind CSS.
 
 ### Directory Structure
 
-```
+```markdown
 frontend/
 ├── public/                             # Static assets
 ├── src/
@@ -167,7 +167,7 @@ The API service provides methods to interact with the backend:
 
 ## Text Analysis and Citation Architecture
 
-The multi-level citation system is a core feature of Wasserstoff. Here's how it works:
+The multi-level citation system is a core feature of Redoc. Here's how it works:
 
 ### Text Analysis Pipeline
 
@@ -251,8 +251,6 @@ Integration tests verify the interaction between components:
 
 - `tests/backend/integration/`: Backend integration tests
 - Testing API endpoints and service coordination
-
-
 
 ## Deployment Architecture
 

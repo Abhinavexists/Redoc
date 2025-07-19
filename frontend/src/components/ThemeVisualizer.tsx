@@ -18,64 +18,126 @@ const ThemeVisualizer: React.FC<ThemeVisualizerProps> = ({
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [graphData, setGraphData] = useState<{ nodes: any[], links: any[] }>({ nodes: [], links: [] });
+  const [error, setError] = useState<string | null>(null);
   const graphRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
+  // Check if ForceGraph2D is properly loaded
   useEffect(() => {
-    if (themes && themes.length > 0) {
-      prepareGraphData(themes);
+    try {
+      if (typeof ForceGraph2D !== 'function') {
+        setError('Visualization component not loaded properly. Please refresh the page.');
+      }
+    } catch (err) {
+      console.error('Error checking ForceGraph2D component:', err);
+      setError('Visualization component not available.');
+    }
+  }, []);
+  
+  useEffect(() => {
+    try {
+      if (themes && themes.length > 0) {
+        prepareGraphData(themes);
+      }
+    } catch (err) {
+      console.error('Error preparing graph data:', err);
+      setError('Failed to prepare visualization data');
     }
   }, [themes]);
   
-  const prepareGraphData = (themes: Theme[]) => {
-    const nodes: any[] = [];
-    const links: any[] = [];
-    const documentNodes = new Set<string>();
+  // Handle window resize to adjust graph
+  useEffect(() => {
+    const handleResize = () => {
+      try {
+        if (graphRef.current) {
+          // Adjust graph on resize with slight delay
+          setTimeout(() => {
+            graphRef.current?.zoomToFit(400);
+          }, 100);
+        }
+      } catch (err) {
+        console.error('Error adjusting graph on resize:', err);
+      }
+    };
     
-    themes.forEach((theme) => {
-      nodes.push({
-        id: `theme-${theme.id}`,
-        name: theme.theme_name,
-        type: 'theme',
-        relevance: theme.relevance || 0.5,
-        group: 1,
-        val: 20,
+    window.addEventListener('resize', handleResize);
+    
+    // Initial fit
+    setTimeout(() => {
+      try {
+        if (graphRef.current) {
+          graphRef.current.zoomToFit(400);
+        }
+      } catch (err) {
+        console.error('Error in initial graph fit:', err);
+      }
+    }, 300);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [graphData]);
+  
+  const prepareGraphData = (themes: Theme[]) => {
+    try {
+      const nodes: any[] = [];
+      const links: any[] = [];
+      const documentNodes = new Set<string>();
+      
+      themes.forEach((theme) => {
+        nodes.push({
+          id: `theme-${theme.id}`,
+          name: theme.theme_name,
+          type: 'theme',
+          relevance: theme.relevance || 0.5,
+          group: 1,
+          val: 20,
+        });
+        
+        if (theme.supporting_documents && Array.isArray(theme.supporting_documents)) {
+          theme.supporting_documents.forEach(docId => {
+            const documentNumber = docId.match(/\d+/)?.[0] || '0';
+            const numericId = parseInt(documentNumber, 10);
+            const documentNodeId = `doc-${numericId}`;
+            
+            if (!documentNodes.has(documentNodeId)) {
+              nodes.push({
+                id: documentNodeId,
+                name: docId,
+                type: 'document',
+                group: 2,
+                val: 10,
+              });
+              documentNodes.add(documentNodeId);
+            }
+            
+            links.push({
+              source: `theme-${theme.id}`,
+              target: documentNodeId,
+              value: theme.relevance || 0.5,
+            });
+          });
+        }
       });
       
-      theme.supporting_documents.forEach(docId => {
-        const documentNumber = docId.match(/\d+/)?.[0] || '0';
-        const numericId = parseInt(documentNumber, 10);
-        const documentNodeId = `doc-${numericId}`;
-        
-        if (!documentNodes.has(documentNodeId)) {
-          nodes.push({
-            id: documentNodeId,
-            name: docId,
-            type: 'document',
-            group: 2,
-            val: 10,
-          });
-          documentNodes.add(documentNodeId);
-        }
-        
-        links.push({
-          source: `theme-${theme.id}`,
-          target: documentNodeId,
-          value: theme.relevance || 0.5,
-        });
-      });
-    });
-    
-    setGraphData({ nodes, links });
+      setGraphData({ nodes, links });
+    } catch (err) {
+      console.error('Error in prepareGraphData:', err);
+      setError('Failed to prepare graph data');
+    }
   };
   
   const handleNodeClick = (node: any) => {
-    if (node.type === 'theme' && onThemeClick) {
-      const themeId = parseInt(node.id.replace('theme-', ''), 10);
-      onThemeClick(themeId);
-    } else if (node.type === 'document' && onDocumentClick) {
-      const docId = parseInt(node.id.replace('doc-', ''), 10);
-      onDocumentClick(docId);
+    try {
+      if (node.type === 'theme' && onThemeClick) {
+        const themeId = parseInt(node.id.replace('theme-', ''), 10);
+        onThemeClick(themeId);
+      } else if (node.type === 'document' && onDocumentClick) {
+        const docId = parseInt(node.id.replace('doc-', ''), 10);
+        onDocumentClick(docId);
+      }
+    } catch (err) {
+      console.error('Error in node click handler:', err);
     }
   };
   
@@ -89,20 +151,29 @@ const ThemeVisualizer: React.FC<ThemeVisualizerProps> = ({
   };
   
   const downloadGraphImage = () => {
-    if (graphRef.current) {
-      const canvas = document.querySelector('canvas');
-      if (canvas) {
-        const link = document.createElement('a');
-        link.download = 'theme-document-graph.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
+    try {
+      if (graphRef.current) {
+        const canvas = document.querySelector('canvas');
+        if (canvas) {
+          const link = document.createElement('a');
+          link.download = 'theme-document-graph.png';
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        }
       }
+    } catch (err) {
+      console.error('Error downloading graph image:', err);
+      setError('Failed to download image');
     }
   };
   
   const resetGraph = () => {
-    if (graphRef.current) {
-      graphRef.current.zoomToFit(400);
+    try {
+      if (graphRef.current) {
+        graphRef.current.zoomToFit(400);
+      }
+    } catch (err) {
+      console.error('Error resetting graph:', err);
     }
   };
   
@@ -142,21 +213,36 @@ const ThemeVisualizer: React.FC<ThemeVisualizerProps> = ({
         </div>
       </CardHeader>
       <CardContent className={`p-0 ${isFullscreen ? 'h-[calc(100%-60px)]' : 'h-[400px]'}`} ref={containerRef}>
-        {graphData.nodes.length > 0 && (
-          <ForceGraph2D
-            ref={graphRef}
-            graphData={graphData}
-            nodeLabel={node => `${node.name} (${node.type})`}
-            nodeColor={nodeColor}
-            nodeRelSize={6}
-            linkWidth={link => (link.value || 0.5) * 2}
-            linkColor={() => '#e2e8f0'}
-            onNodeClick={handleNodeClick}
-            cooldownTicks={100}
-            onEngineStop={() => graphRef.current?.zoomToFit(400)}
-          />
+        {error && (
+          <div className="h-full flex items-center justify-center text-red-500">
+            <p>{error}</p>
+          </div>
         )}
-        {graphData.nodes.length === 0 && (
+        {!error && graphData.nodes.length > 0 && (
+          <div className="h-full w-full">
+            <ForceGraph2D
+              ref={graphRef}
+              graphData={graphData}
+              nodeLabel={node => `${node.name} (${node.type})`}
+              nodeColor={nodeColor}
+              nodeRelSize={6}
+              linkWidth={link => (link.value || 0.5) * 2}
+              linkColor={() => '#e2e8f0'}
+              onNodeClick={handleNodeClick}
+              cooldownTicks={100}
+              onEngineStop={() => {
+                try {
+                  if (graphRef.current) {
+                    graphRef.current.zoomToFit(400);
+                  }
+                } catch (err) {
+                  console.error('Error zooming graph:', err);
+                }
+              }}
+            />
+          </div>
+        )}
+        {!error && graphData.nodes.length === 0 && (
           <div className="h-full flex items-center justify-center text-muted-foreground">
             <p>No visualization data available</p>
           </div>

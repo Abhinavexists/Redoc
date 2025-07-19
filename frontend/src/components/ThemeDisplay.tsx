@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { LightbulbIcon, BookmarkIcon, BarChart3, Maximize2, List, Search, FilterIcon, RefreshCw, LinkIcon } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { LightbulbIcon, BookmarkIcon, BarChart3, Maximize2, List, Search, FilterIcon, RefreshCw, LinkIcon, HelpCircle, X } from 'lucide-react';
 import type { Theme } from '../types';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from './ui/card';
 import { Badge } from './ui/badge';
@@ -7,6 +7,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import ThemeCitationVisualizer from './ThemeCitationVisualizer';
+import ThemeVisualizer from './ThemeVisualizer';
 
 interface ThemeDisplayProps {
   themes: Theme[];
@@ -22,6 +23,31 @@ const ThemeDisplay: React.FC<ThemeDisplayProps> = ({ themes, onDocumentView }) =
   const [filterDocName, setFilterDocName] = useState('');
   const [visibleThemes, setVisibleThemes] = useState(BATCH_SIZE);
   const [selectedTheme, setSelectedTheme] = useState<number | null>(null);
+  const [isViewChanging, setIsViewChanging] = useState(false);
+  const [showChartHelp, setShowChartHelp] = useState(false);
+  const [pulseChartButton, setPulseChartButton] = useState(true);
+
+  // Save active view to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('themeDisplayView', activeView);
+    } catch (e) {
+      console.error('Could not save view preference', e);
+    }
+  }, [activeView]);
+
+  // Debug log for theme rendering
+  useEffect(() => {
+    console.log('ThemeDisplay received themes:', themes);
+  }, [themes]);
+
+  // Stop pulsing the chart button after 5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPulseChartButton(false);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const themeColors = [
     { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200', light: 'bg-blue-50' },
@@ -36,7 +62,29 @@ const ThemeDisplay: React.FC<ThemeDisplayProps> = ({ themes, onDocumentView }) =
   ];
 
   if (!themes || themes.length === 0) {
-    return null;
+    return (
+      <Card className="mt-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2">
+            <LightbulbIcon className="h-5 w-5" />
+            Theme Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="py-6 flex flex-col items-center gap-4 text-center">
+            <div className="p-4 rounded-full bg-amber-50">
+              <LightbulbIcon className="h-8 w-8 text-amber-500" />
+            </div>
+            <div className="space-y-2 max-w-md">
+              <h3 className="text-lg font-medium">No themes identified</h3>
+              <p className="text-sm text-muted-foreground">
+                Make sure "Identify themes across documents" is enabled in the search settings to analyze connections between your documents.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   const filteredThemes = useMemo(() => {
@@ -85,6 +133,24 @@ const ThemeDisplay: React.FC<ThemeDisplayProps> = ({ themes, onDocumentView }) =
 
   const hasMoreThemesToLoad = filteredThemes.length > visibleThemes;
 
+  // Handle view transitions
+  const handleViewChange = (view: 'list' | 'chart') => {
+    if (view === activeView) return;
+    
+    setIsViewChanging(true);
+    setActiveView(view);
+    
+    // Show chart help when first switching to chart view
+    if (view === 'chart') {
+      setShowChartHelp(true);
+    }
+    
+    // Reset after transition
+    setTimeout(() => {
+      setIsViewChanging(false);
+    }, 300);
+  };
+
   return (
     <div className="space-y-6">
     <Card>
@@ -94,25 +160,36 @@ const ThemeDisplay: React.FC<ThemeDisplayProps> = ({ themes, onDocumentView }) =
             <CardTitle className="flex items-center gap-2">
               <LightbulbIcon className="h-5 w-5" />
               Identified Themes
+              {isViewChanging && (
+                <Badge variant="outline" className="ml-2 animate-pulse">
+                  Loading {activeView} view...
+                </Badge>
+              )}
             </CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 border-2 rounded-md p-1 bg-background shadow-md hover:border-primary/50 transition-colors">
               <Button 
-                variant="ghost" 
+                variant={activeView === 'list' ? "default" : "ghost"} 
                 size="sm" 
-                className={activeView === 'list' ? 'bg-muted' : ''}
-                onClick={() => setActiveView('list')}
+                onClick={() => handleViewChange('list')}
+                className="flex items-center gap-1.5 font-medium"
               >
-                <List className="h-4 w-4 mr-1" />
+                <List className="h-4 w-4" />
                 List
               </Button>
               <Button 
-                variant="ghost" 
+                variant={activeView === 'chart' ? "default" : "ghost"} 
                 size="sm" 
-                className={activeView === 'chart' ? 'bg-muted' : ''}
-                onClick={() => setActiveView('chart')}
+                onClick={() => handleViewChange('chart')}
+                className={`flex items-center gap-1.5 font-medium ${pulseChartButton && activeView === 'list' ? 'animate-pulse relative' : ''}`}
               >
-                <BarChart3 className="h-4 w-4 mr-1" />
+                <BarChart3 className="h-4 w-4" />
                 Chart
+                {pulseChartButton && activeView === 'list' && (
+                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  </span>
+                )}
               </Button>
             </div>
           </div>
@@ -243,6 +320,41 @@ const ThemeDisplay: React.FC<ThemeDisplayProps> = ({ themes, onDocumentView }) =
         ) : (
           // Chart View
           <div className="space-y-6">
+            {/* Chart Help Panel */}
+            {showChartHelp && (
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-4 relative">
+                <div className="flex items-start gap-3">
+                  <HelpCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-800">
+                    <h4 className="font-medium mb-1">Interactive Theme Visualization</h4>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>The graph shows relationships between themes (purple) and documents (orange)</li>
+                      <li>Click and drag nodes to rearrange the visualization</li>
+                      <li>Click on any theme or document node to view more details</li>
+                      <li>Use the controls in the top-right to reset view, download, or expand to fullscreen</li>
+                    </ul>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute top-2 right-2 h-6 w-6"
+                  onClick={() => setShowChartHelp(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            
+            {/* Theme Visualizer Graph */}
+            <div className="bg-white rounded-md border">
+              <ThemeVisualizer 
+                themes={filteredThemes} 
+                onDocumentClick={onDocumentView}
+                onThemeClick={toggleThemeCitations}
+              />
+            </div>
+            
             <div className="overflow-x-auto">
               <ScrollArea className="max-h-[60vh]">
                 <table className="min-w-full border-collapse">

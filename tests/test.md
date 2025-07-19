@@ -75,4 +75,4 @@ When writing new tests:
    @patch('backend.app.api.some_module.SomeClass')
    def test_with_mock(mock_class):
        # Test with mock
-   ``` 
+   ```
