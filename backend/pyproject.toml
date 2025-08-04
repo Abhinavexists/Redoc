@@ -5,9 +5,6 @@ description = "Document and Theme identification chatbot"
 readme = "README.md"
 requires-python = ">=3.10"
 
-[tool.setuptools.packages.find]
-where = ["."]
-
 # Core production dependencies only
 dependencies = [
     "fastapi>=0.115.0,<0.116.0",
