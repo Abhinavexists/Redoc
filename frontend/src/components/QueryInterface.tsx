@@ -162,12 +162,12 @@ const QueryInterface: React.FC<QueryInterfaceProps> = ({
         )}
         
         <div className="border rounded-lg p-4 bg-muted/30">
-          <div className="flex items-center mb-4">
+          <div className="flex items-center mb-3">
             <Settings className="h-5 w-5 mr-2 text-muted-foreground" />
             <h3 className="font-medium">Analysis Settings</h3>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="flex flex-col space-y-1.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -196,9 +196,12 @@ const QueryInterface: React.FC<QueryInterfaceProps> = ({
               
               {enableThemes && (
                 <div className="pl-8 mt-2">
-                  <Label htmlFor="theme-count" className="text-xs text-muted-foreground mb-2 block">
-                    Number of themes to identify ({themeCount})
-                  </Label>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="theme-count" className="text-xs text-muted-foreground">
+                      Number of themes to identify
+                    </Label>
+                    <span className="text-xs text-muted-foreground">{themeCount}</span>
+                  </div>
                   <Slider
                     id="theme-count"
                     min={1}
@@ -212,11 +215,11 @@ const QueryInterface: React.FC<QueryInterfaceProps> = ({
               )}
             </div>
             
-            <div className="space-y-1.5">
-              <Label htmlFor="relevance" className="text-xs text-muted-foreground flex justify-between">
-                <span>Relevance threshold</span>
-                <span>{relevanceThreshold}%</span>
-              </Label>
+            <div className="space-y-2 pl-8">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="relevance" className="text-xs text-muted-foreground">Relevance threshold</Label>
+                <span className="text-xs text-muted-foreground">{relevanceThreshold}%</span>
+              </div>
               <Slider
                 id="relevance"
                 min={50}

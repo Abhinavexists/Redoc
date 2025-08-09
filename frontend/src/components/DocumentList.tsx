@@ -15,6 +15,18 @@ import {
 import { Alert, AlertDescription } from './ui/alert';
 import { Input } from './ui/input';
 import DocumentViewer from './DocumentViewer';
+import { Checkbox } from './ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
+import { useToast } from './ui/use-toast';
 
 interface DocumentListProps {
   refreshTrigger: number;
@@ -35,8 +47,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openDeleteAllDialog, setOpenDeleteAllDialog] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<number | null>(null);
-  const [alertMessage, setAlertMessage] = useState<string | null>(null);
-  const [alertSeverity, setAlertSeverity] = useState<'success' | 'error'>('success');
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string | null>(null);
   const [viewingDocument, setViewingDocument] = useState<number | null>(null);
@@ -176,15 +187,13 @@ const DocumentList: React.FC<DocumentListProps> = ({
     
     try {
       await api.deleteDocument(documentToDelete);
-      setAlertMessage("Document deleted successfully");
-      setAlertSeverity("success");
+      toast({ title: 'Document deleted', description: `Document #${documentToDelete} was removed.` });
       fetchDocuments(); // Refresh the list
       if (onDocumentsChange) {
         onDocumentsChange();
       }
     } catch (err) {
-      setAlertMessage("Error deleting document");
-      setAlertSeverity("error");
+      toast({ variant: 'destructive', title: 'Delete failed', description: 'Error deleting document' });
       console.error(err);
     } finally {
       setOpenDeleteDialog(false);
@@ -195,8 +204,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
   const handleConfirmDeleteAll = async () => {
     try {
       await api.deleteAllDocuments();
-      setAlertMessage("All documents deleted successfully");
-      setAlertSeverity("success");
+      toast({ title: 'All documents deleted', description: 'The document list has been cleared.' });
       fetchDocuments(); // Refresh the list
       setSelectedDocuments([]); // Clear selections
       notifySelectionChange([]);
@@ -204,8 +212,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
         onDocumentsChange();
       }
     } catch (err) {
-      setAlertMessage("Error deleting documents");
-      setAlertSeverity("error");
+      toast({ variant: 'destructive', title: 'Delete failed', description: 'Error deleting documents' });
       console.error(err);
     } finally {
       setOpenDeleteAllDialog(false);
@@ -235,15 +242,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
     return <div className={badgeClass}>{filetype}</div>;
   };
 
-  const CustomCheckbox = ({ checked, onChange }: { checked: boolean, onChange: () => void }) => (
-    <div 
-      className={`w-4 h-4 border rounded flex items-center justify-center cursor-pointer
-        ${checked ? 'bg-primary border-primary' : 'bg-background border-input'}`}
-      onClick={onChange}
-    >
-      {checked && <div className="w-2 h-2 bg-primary-foreground rounded-sm" />}
-    </div>
-  );
+  
 
   // Find previous/next document for the document viewer navigation
   if (loading) {
@@ -293,7 +292,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
                     : "Select All"}
                 </Button>
                 <Button 
-                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
+                  variant="destructive"
                   onClick={handleDeleteAllClick}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -357,12 +356,12 @@ const DocumentList: React.FC<DocumentListProps> = ({
             <>
               <div className="rounded-md border">
                 <Table>
-                  <TableHeader>
+                      <TableHeader>
                     <TableRow>
                       <TableHead className="w-12">
-                        <CustomCheckbox 
+                        <Checkbox 
                           checked={filteredDocuments.length > 0 && selectedDocuments.length === filteredDocuments.length}
-                          onChange={handleSelectAll}
+                          onCheckedChange={handleSelectAll}
                         />
                       </TableHead>
                       <TableHead>ID</TableHead>
@@ -386,9 +385,9 @@ const DocumentList: React.FC<DocumentListProps> = ({
                           className={selectedDocuments.includes(doc.id) ? "bg-muted/50" : ""}
                         >
                           <TableCell className="p-2">
-                            <CustomCheckbox
+                            <Checkbox
                               checked={selectedDocuments.includes(doc.id)}
-                              onChange={() => handleToggleSelect(doc.id)}
+                              onCheckedChange={() => handleToggleSelect(doc.id)}
                             />
                           </TableCell>
                           <TableCell>{doc.id}</TableCell>
@@ -412,12 +411,12 @@ const DocumentList: React.FC<DocumentListProps> = ({
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button
+                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
                                 onClick={() => handleDeleteClick(doc.id)}
-                              >
+                               >
                                 <TrashIcon className="h-4 w-4" />
                               </Button>
                             </div>
@@ -482,82 +481,38 @@ const DocumentList: React.FC<DocumentListProps> = ({
       )}
 
       {/* Delete document dialog */}
-      {openDeleteDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-2">Are you sure?</h3>
-            <p className="text-muted-foreground mb-4">
-              This action cannot be undone. This will permanently delete the document.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                className="px-4 py-2 rounded border border-input bg-background text-sm font-medium"
-                onClick={() => setOpenDeleteDialog(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-red-500 text-white text-sm font-medium"
-                onClick={handleConfirmDelete}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AlertDialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this document?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the selected document.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete all documents dialog */}
-      {openDeleteAllDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-2">Delete all documents?</h3>
-            <p className="text-muted-foreground mb-4">
+      <AlertDialog open={openDeleteAllDialog} onOpenChange={setOpenDeleteAllDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete all documents?</AlertDialogTitle>
+            <AlertDialogDescription>
               This action cannot be undone. This will permanently delete all documents from the database.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                className="px-4 py-2 rounded border border-input bg-background text-sm font-medium"
-                onClick={() => setOpenDeleteAllDialog(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-red-500 text-white text-sm font-medium"
-                onClick={handleConfirmDeleteAll}
-              >
-                Delete All
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDeleteAll}>Delete All</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-      {/* Alert message */}
-      {alertMessage && (
-        <div className={`fixed bottom-4 right-4 p-4 rounded-md shadow-lg ${
-          alertSeverity === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        }`}>
-          <div className="flex items-center gap-2">
-            {alertSeverity === 'success' ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            )}
-            <span>{alertMessage}</span>
-            <button 
-              onClick={() => setAlertMessage(null)}
-              className="ml-auto text-sm hover:bg-opacity-20 hover:bg-black p-1 rounded"
-            >
-              &times;
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Toasts handled via <Toaster /> in App */}
     </>
   );
 };

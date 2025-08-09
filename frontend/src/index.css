@@ -36,33 +36,34 @@
 }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
- 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
- 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
- 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
- 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
- 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
- 
-    --accent: 217.2 32.6% 17.5%;
+    /* Softer, higher-contrast slate palette */
+    --background: 222 47% 6%;     /* near-slate-900 */
+    --foreground: 210 40% 96%;    /* slate-100 */
+
+    --card: 222 47% 8%;           /* slightly lighter than bg */
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 47% 6%;
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 226 70% 55%;       /* indigo-500 for accents */
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 215 28% 17%;     /* slate-800 */
+    --secondary-foreground: 210 40% 96%;
+
+    --muted: 215 28% 14%;         /* slate-900-ish for tracks */
+    --muted-foreground: 215 20% 70%;
+
+    --accent: 226 70% 40%;        /* deeper indigo for hovers */
     --accent-foreground: 210 40% 98%;
- 
-    --destructive: 0 62.8% 30.6%;
+
+    --destructive: 0 72% 45%;     /* slightly brighter red */
     --destructive-foreground: 210 40% 98%;
- 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+
+    --border: 215 28% 22%;        /* slate-700 */
+    --input: 215 28% 22%;
+    --ring: 226 70% 55%;
   }
 }
  

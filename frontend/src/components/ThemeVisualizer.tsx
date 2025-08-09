@@ -7,12 +7,14 @@ import ForceGraph2D from 'react-force-graph-2d';
 
 interface ThemeVisualizerProps {
   themes: Theme[];
+  activeThemeId?: number | null;
   onDocumentClick?: (documentId: number) => void;
   onThemeClick?: (themeId: number) => void;
 }
 
 const ThemeVisualizer: React.FC<ThemeVisualizerProps> = ({
   themes,
+  activeThemeId = null,
   onDocumentClick,
   onThemeClick,
 }) => {
@@ -85,13 +87,15 @@ const ThemeVisualizer: React.FC<ThemeVisualizerProps> = ({
       const documentNodes = new Set<string>();
       
       themes.forEach((theme) => {
+        const isActive = activeThemeId != null && theme.id === activeThemeId;
         nodes.push({
           id: `theme-${theme.id}`,
           name: theme.theme_name,
           type: 'theme',
           relevance: theme.relevance || 0.5,
           group: 1,
-          val: 20,
+          val: isActive ? 28 : 20,
+          isActive,
         });
         
         if (theme.supporting_documents && Array.isArray(theme.supporting_documents)) {
@@ -111,10 +115,11 @@ const ThemeVisualizer: React.FC<ThemeVisualizerProps> = ({
               documentNodes.add(documentNodeId);
             }
             
-            links.push({
+             links.push({
               source: `theme-${theme.id}`,
               target: documentNodeId,
-              value: theme.relevance || 0.5,
+              value: (theme.relevance || 0.5) + (isActive ? 0.5 : 0),
+              isActive,
             });
           });
         }
@@ -179,6 +184,7 @@ const ThemeVisualizer: React.FC<ThemeVisualizerProps> = ({
   
   const nodeColor = (node: any) => {
     if (node.type === 'theme') {
+      if (node.isActive) return '#4f46e5';
       const relevance = node.relevance || 0.5;
       if (relevance > 0.8) return '#8b5cf6';
       if (relevance > 0.5) return '#a78bfa';
@@ -226,8 +232,8 @@ const ThemeVisualizer: React.FC<ThemeVisualizerProps> = ({
               nodeLabel={node => `${node.name} (${node.type})`}
               nodeColor={nodeColor}
               nodeRelSize={6}
-              linkWidth={link => (link.value || 0.5) * 2}
-              linkColor={() => '#e2e8f0'}
+               linkWidth={link => (link.value || 0.5) * 2}
+               linkColor={link => link.isActive ? '#6366f1' : '#e2e8f0'}
               onNodeClick={handleNodeClick}
               cooldownTicks={100}
               onEngineStop={() => {

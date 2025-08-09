@@ -126,19 +126,6 @@ const api = {
       console.error('Error in queryDocuments:', error);
       throw error;
     }
-  },
-
-  getThemeCitations: async (themeId: number, citationLevel: 'document' | 'paragraph' | 'sentence' = 'paragraph') => {
-    try {
-      return await axios.get(`${API_URL}/themes/${themeId}/citations`, {
-        params: {
-          citation_level: citationLevel
-        }
-      });
-    } catch (error) {
-      console.error('Error in getThemeCitations:', error);
-      throw error;
-    }
   }
 };
 

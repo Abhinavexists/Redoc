@@ -9,8 +9,7 @@ import Header from './components/Header';
 import { Toaster } from './components/ui/toaster';
 import type { QueryResults, Theme } from './types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
-import { mockThemes } from './services/mockThemes';
-import { Button } from './components/ui/button';
+// Removed debug imports
 
 const App: React.FC = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -118,27 +117,12 @@ const App: React.FC = () => {
                 <ResultsDisplay matches={queryResults.matches} />
               )}
               
-              {/* Debug button for testing themes - REMOVE IN PRODUCTION */}
-              <div className="mb-4 px-4 py-2 bg-slate-100 border border-slate-200 rounded-md">
-                <div className="text-sm mb-2 text-slate-600">Debug: Test theme visualization</div>
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    console.log("Setting mock themes:", mockThemes);
-                    setQueryResults(prev => ({
-                      ...prev,
-                      themes: mockThemes
-                    }));
-                  }}
-                >
-                  Load Test Themes
-                </Button>
-              </div>
+              {/* Debug UI removed for a sleeker production interface */}
               
               {queryResults && queryResults.themes && queryResults.themes.length > 0 && (
                 <ThemeDisplay 
                   themes={queryResults.themes} 
+                  matches={queryResults.matches as any}
                   onDocumentView={(documentId) => {
                     // Open document view (if needed)
                     console.log(`Viewing document ${documentId}`);
@@ -149,6 +133,7 @@ const App: React.FC = () => {
               {identifiedThemes.length > 0 && !queryResults && (
                 <ThemeDisplay 
                   themes={identifiedThemes} 
+                  matches={[]}
                   onDocumentView={(documentId) => {
                     // Open document view (if needed)
                     console.log(`Viewing document ${documentId}`);
